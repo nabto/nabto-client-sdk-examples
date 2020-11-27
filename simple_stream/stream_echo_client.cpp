@@ -10,56 +10,14 @@
 #include <iomanip>
 #include <fstream>
 
+#include <thread>
+
+static void reader(NabtoClient* context, NabtoClientStream* stream);
+
 void die(std::string msg, cxxopts::Options options) {
     std::cout << msg << std::endl;
     std::cout << options.help({"", "Group"}) << std::endl;
     exit(1);
-}
-
-void close_connection(NabtoClient* context, NabtoClientConnection* connection) {
-    NabtoClientFuture* closeFuture = nabto_client_future_new(context);
-    nabto_client_connection_close(connection, closeFuture);
-    nabto_client_future_wait(closeFuture);
-
-    NabtoClientError ec = nabto_client_future_error_code(closeFuture);
-    if (ec != NABTO_CLIENT_EC_OK) {
-        std::cerr << "could not close connection " << nabto_client_error_get_message(ec) << std::endl;
-    }
-    std::cout << "freed connection" << std::endl;
-    nabto_client_future_free(closeFuture);
-}
-
-NabtoClientError coap_execute(NabtoClient* context, NabtoClientCoap* coap)
-{
-    NabtoClientFuture* future = nabto_client_future_new(context);
-    nabto_client_coap_execute(coap, future);
-    NabtoClientError ec = nabto_client_future_wait(future);
-    return ec;
-}
-
-
-void coap_get(NabtoClient* context, NabtoClientConnection* connection, std::string req) {
-    NabtoClientCoap* request = nabto_client_coap_new(connection, "GET", req.c_str());
-
-    std::cout << "Sending CoAP GET request: " << req << std::endl;
-    NabtoClientError ec = coap_execute(context, request);
-    if (ec != NABTO_CLIENT_EC_OK) {
-        std::cout << "CoAP execution error: " << nabto_client_error_get_message(ec) << std::endl;
-        return;
-    }
-    uint16_t statusCode;
-    nabto_client_coap_get_response_status_code(request, &statusCode);
-    if (statusCode != 205) {
-        std::cout << "CoAP error: " << statusCode << std::endl;
-        return;
-    }
-    void* payload = NULL;
-    size_t payloadLength = 0;
-    nabto_client_coap_get_response_payload(request, &payload, &payloadLength);
-    std::string responseData((const char*)payload, payloadLength);
-    std::cout << "Received CoAP response data: " << responseData << std::endl;
-
-    nabto_client_coap_free(request);
 }
 
 static void log(const NabtoClientLogMessage* message, void* userData)
@@ -73,32 +31,30 @@ static void log(const NabtoClientLogMessage* message, void* userData)
     std::cout << std::put_time(&bt, "%H:%M:%S") << '.' << std::setfill('0') << std::setw(3) << ms.count() << " " << " " << message->module << " " << message->message << std::endl;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     nlohmann::json opts;
-    std::string request;
     std::string logLevel;
-
 
     try
     {
-        cxxopts::Options options(argv[0], "Nabto Edge Simple CoAP client");
-        options.add_options()
+        cxxopts::Options options(argv[0], "Nabto stream echo client example.");
+        options.add_options("Options")
             ("s,serverurl", "Optional Server URL for the Nabto basestation", cxxopts::value<std::string>())
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
             ("p,productid", "Product ID to use", cxxopts::value<std::string>())
             ("k,serverkey", "Server key of the app", cxxopts::value<std::string>())
             ("server-jwt-token", "Optional jwt token to validate the client", cxxopts::value<std::string>()->default_value(""))
-            ("r,request", "The coap request path to use. Ie. /hello-world", cxxopts::value<std::string>()->default_value("/hello-world"))
             ("log-level", "The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
             ("force-remote", "Force the client to connect remote, not using local discovery")
             ("h,help", "Shows this help text");
         auto result = options.parse(argc, argv);
 
-        if (result.count("help")) {
+        if (result.count("help"))
+        {
             std::cout << options.help({"", "Group"}) << std::endl;
             exit(0);
         }
-
         if(result.count("serverurl")) {
             opts["ServerUrl"] = result["serverurl"].as<std::string>();
         }
@@ -126,8 +82,6 @@ int main(int argc, char** argv) {
         if(result.count("server-jwt-token")) {
             opts["ServerJwtToken"] = result["server-jwt-token"].as<std::string>();
         }
-
-        request = result["request"].as<std::string>();
         logLevel = result["log-level"].as<std::string>();
     }
     catch (const cxxopts::OptionException& e)
@@ -144,7 +98,6 @@ int main(int argc, char** argv) {
     nabto_client_set_log_level(context, logLevel.c_str());
 
     NabtoClientConnection* connection = nabto_client_connection_new(context);
-
     char* privateKey;
     nabto_client_create_private_key(context, &privateKey);
 
@@ -153,10 +106,10 @@ int main(int argc, char** argv) {
 
     nabto_client_connection_set_options(connection, opts.dump().c_str());
 
-    NabtoClientFuture* connect = nabto_client_future_new(context);
-    nabto_client_connection_connect(connection, connect);
+    NabtoClientFuture* fut = nabto_client_future_new(context);
+    nabto_client_connection_connect(connection, fut);
 
-    NabtoClientError ec = nabto_client_future_wait(connect);
+    NabtoClientError ec = nabto_client_future_wait(fut);
 
     if (ec != NABTO_CLIENT_EC_OK) {
         std::cerr << "could not connect to device " << nabto_client_error_get_message(ec) << std::endl;
@@ -174,11 +127,57 @@ int main(int argc, char** argv) {
         }
         nabto_client_string_free(f);
     }
+    NabtoClientStream* stream = nabto_client_stream_new(connection);
+    nabto_client_stream_open(stream, fut, 42);
+    if ((ec = nabto_client_future_wait(fut)) != NABTO_CLIENT_EC_OK) {
+        std::cerr << "Failed to open stream: " << nabto_client_error_get_message(ec) << std::endl;
+        exit(1);
+    }
 
-    coap_get(context, connection, request);
+    std::cout << "Stream opened. Type data to send and press <enter> to send. Send the EOF character (crtl+d) to close stream." << std::endl;
+    std::thread t(reader, context, stream);
 
-    close_connection(context, connection);
+    // TODO: sigInt signal handler
 
+    for (;;) {
+        std::string input;
+        try {
+            std::cin >> input;
+            if(std::cin.eof()){
+                std::cout << "Reached EOF, closing stream" << std::endl;
+                nabto_client_stream_close(stream, fut);
+                nabto_client_future_wait(fut);
+                break;
+            }
+        } catch (...) {
+            nabto_client_stream_close(stream, fut);
+            nabto_client_future_wait(fut);
+            break;
+        }
+        nabto_client_stream_write(stream, fut, input.data(), input.size());
+        nabto_client_future_wait(fut);
+    }
+
+    t.join();
+    std::cout << "Stream closed. Cleaning up." << std::endl;
+    nabto_client_connection_close(connection, fut);
+    nabto_client_future_wait(fut);
+    nabto_client_stop(context);
+    nabto_client_stream_free(stream);
     nabto_client_connection_free(connection);
+    nabto_client_free(context);
+}
 
+void reader(NabtoClient* context, NabtoClientStream* stream)
+{
+    char buffer[1024];
+    NabtoClientFuture* fut = nabto_client_future_new(context);
+    for (;;) {
+        size_t read = 0;
+        nabto_client_stream_read_some(stream, fut, buffer, 1024, &read);
+        if (nabto_client_future_wait(fut) != NABTO_CLIENT_EC_OK) {
+            return;
+        }
+        std::cout << "Received stream data: " << std::string(buffer, read) << std::endl;
+    }
 }
