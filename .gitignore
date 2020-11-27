@@ -1,0 +1,6 @@
+build
+install
+_build
+_install
+*#
+*~
