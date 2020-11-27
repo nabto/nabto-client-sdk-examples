@@ -1,6 +1,7 @@
 #include <nabto/nabto_client.h>
 
 #include <3rdparty/cxxopts.hpp>
+#include <3rdparty/nlohmann/json.hpp>
 
 #include <string>
 #include <iostream>
@@ -8,7 +9,6 @@
 #include <chrono>
 #include <iomanip>
 #include <fstream>
-//#include <thread>
 
 void die(std::string msg, cxxopts::Options options) {
     std::cout << msg << std::endl;
@@ -39,19 +39,18 @@ NabtoClientError coap_execute(NabtoClient* context, NabtoClientCoap* coap)
 
 
 void coap_get(NabtoClient* context, NabtoClientConnection* connection, std::string req) {
-    std::cout << "Sending CoAP GET request" << std::endl;
     NabtoClientCoap* request = nabto_client_coap_new(connection, "GET", req.c_str());
 
-    std::cout << "Sending coap get-request:" << req << std::endl;
+    std::cout << "Sending CoAP GET request: " << req << std::endl;
     NabtoClientError ec = coap_execute(context, request);
     if (ec != NABTO_CLIENT_EC_OK) {
-        std::cout << "coap execution error: " << nabto_client_error_get_message(ec) << std::endl;
+        std::cout << "CoAP execution error: " << nabto_client_error_get_message(ec) << std::endl;
         return;
     }
     uint16_t statusCode;
     nabto_client_coap_get_response_status_code(request, &statusCode);
     if (statusCode != 205) {
-        std::cout << "coap error: " << statusCode << std::endl;
+        std::cout << "CoAP error: " << statusCode << std::endl;
         return;
     }
     void* payload = NULL;
@@ -75,20 +74,16 @@ static void log(const NabtoClientLogMessage* message, void* userData)
 }
 
 int main(int argc, char** argv) {
-    std::string serverUrl;
-    std::string deviceId;
-    std::string productId;
-    std::string serverKey;
+    nlohmann::json opts;
     std::string request;
     std::string logLevel;
-    bool forceRemote = false;
 
 
     try
     {
-        cxxopts::Options options(argv[0], "Nabto 5 test client");
+        cxxopts::Options options(argv[0], "Nabto Edge Simple CoAP client");
         options.add_options()
-            ("H,serverurl", "Optional Server URL for the Nabto basestation", cxxopts::value<std::string>())
+            ("u,serverurl", "Optional Server URL for the Nabto basestation", cxxopts::value<std::string>())
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
             ("p,productid", "Product ID to use", cxxopts::value<std::string>())
             ("s,serverkey", "Server key of the app", cxxopts::value<std::string>())
@@ -104,28 +99,28 @@ int main(int argc, char** argv) {
         }
 
         if(result.count("serverurl")) {
-            serverUrl = result["serverurl"].as<std::string>();
+            opts["ServerUrl"] = result["serverurl"].as<std::string>();
         }
 
         if(result.count("deviceid")) {
-           deviceId = result["deviceid"].as<std::string>();
+            opts["DeviceId"] = result["deviceid"].as<std::string>();
         } else {
             die("no device ID provided", options);
         }
 
         if(result.count("productid")) {
-            productId = result["productid"].as<std::string>();
+            opts["ProductId"] = result["productid"].as<std::string>();
         } else {
             die("no product ID provided", options);
         }
 
         if(result.count("serverkey")) {
-            serverKey = result["serverkey"].as<std::string>();
+            opts["ServerKey"] = result["serverkey"].as<std::string>();
         } else {
-            die("no server key provided", options);
+            std::cout << "No Server Key provided, remote connections will not be possible" << std::endl;
         }
         if(result.count("force-remote")) {
-            forceRemote=true;
+            opts["Local"] = false;
         }
 
         request = result["request"].as<std::string>();
@@ -137,7 +132,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    std::cout << "connecting to " << productId << "." << deviceId << std::endl;
+    std::cout << "connecting to " << opts["ProductId"].get<std::string>() << "." << opts["DeviceId"].get<std::string>() << std::endl;
 
     NabtoClient* context = nabto_client_new();
 
@@ -145,34 +140,19 @@ int main(int argc, char** argv) {
     nabto_client_set_log_level(context, logLevel.c_str());
 
     NabtoClientConnection* connection = nabto_client_connection_new(context);
-    std::cout << "Created a new connection" << std::endl;
-
-
-    NabtoClientError ec;
-    if (!serverUrl.empty()) {
-        ec = nabto_client_connection_set_server_url(connection, serverUrl.c_str());
-    }
-    ec = nabto_client_connection_set_server_api_key(connection, serverKey.c_str());
-
-    ec = nabto_client_connection_set_product_id(connection, productId.c_str());
-    ec = nabto_client_connection_set_device_id(connection, deviceId.c_str());
 
     char* privateKey;
     nabto_client_create_private_key(context, &privateKey);
 
-    ec = nabto_client_connection_set_private_key(connection, privateKey);
+    opts["PrivateKey"] = std::string(privateKey);
     nabto_client_string_free(privateKey);
 
-    if(forceRemote) {
-        nabto_client_connection_set_options(connection, "{\"Local\": false}");
-    }
-
-
+    nabto_client_connection_set_options(connection, opts.dump().c_str());
 
     NabtoClientFuture* connect = nabto_client_future_new(context);
     nabto_client_connection_connect(connection, connect);
 
-    ec = nabto_client_future_wait(connect);
+    NabtoClientError ec = nabto_client_future_wait(connect);
 
     if (ec != NABTO_CLIENT_EC_OK) {
         std::cerr << "could not connect to device " << nabto_client_error_get_message(ec) << std::endl;
