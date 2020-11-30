@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
         std::cerr << "could not connect to device " << nabto_client_error_get_message(ec) << std::endl;
         std::cerr << "Local error code " << nabto_client_error_get_message(nabto_client_connection_get_local_channel_error_code(connection)) << std::endl;
         std::cerr << "Remote error code " << nabto_client_error_get_message(nabto_client_connection_get_remote_channel_error_code(connection)) << std::endl;
-        exit(1);
+        goto cleanup;
     }
 
     tunnel = nabto_client_tcp_tunnel_new(connection);
@@ -150,13 +150,13 @@ int main(int argc, char** argv) {
     ec = nabto_client_future_wait(future);
     if (ec != NABTO_CLIENT_EC_OK) {
         std::cerr << "Could not open the tunnel. " << nabto_client_error_get_message(ec) << std::endl;
-        exit(1);
+        goto cleanup;
     }
 
     ec = nabto_client_tcp_tunnel_get_local_port(tunnel, &localPort);
     if (ec != NABTO_CLIENT_EC_OK) {
         std::cerr << "Could not get the local port. " << nabto_client_error_get_message(ec) << std::endl;
-        exit(1);
+        goto cleanup;
     }
 
     std::cout << "Opened a connection to the device and opened a tunnel to the service: " << service << std::endl;
@@ -170,9 +170,19 @@ int main(int argc, char** argv) {
 
     close_connection(context, connection);
 
-    nabto_client_tcp_tunnel_free(tunnel);
-    nabto_client_connection_free(connection);
-    nabto_client_future_free(future);
-    nabto_client_free(context);
+ cleanup:
+    if (tunnel != NULL) {
+        nabto_client_tcp_tunnel_free(tunnel);
+    }
+    if (connection != NULL) {
+        nabto_client_connection_free(connection);
+    }
+    if (future != NULL) {
+        nabto_client_future_free(future);
+    }
+    if (context != NULL) {
+        nabto_client_stop(context);
+        nabto_client_free(context);
+    }
 
 }
