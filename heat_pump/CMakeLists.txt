@@ -27,6 +27,6 @@ elseif(APPLE)
     ${CMAKE_INSTALL_NAME_TOOL} -change
     @rpath/libnabto_client.dylib
     @executable_path/libnabto_client.dylib
-    $<TARGET_FILE:edge_tunnel_client>)
+    $<TARGET_FILE:heat_pump_client>)
   install(FILES ${CMAKE_SOURCE_DIR}/lib/macos/libnabto_client.dylib DESTINATION .)
 endif()
