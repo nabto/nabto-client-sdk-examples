@@ -20,3 +20,4 @@ endif()
 
 add_subdirectory(simple_coap)
 add_subdirectory(simple_tunnel)
+add_subdirectory(simple_stream)
