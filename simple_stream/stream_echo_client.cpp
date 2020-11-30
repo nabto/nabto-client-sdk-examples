@@ -162,7 +162,9 @@ int main(int argc, char** argv)
     std::cout << "Stream closed. Cleaning up." << std::endl;
     nabto_client_connection_close(connection, fut);
     nabto_client_future_wait(fut);
+    nabto_client_future_free(fut);
     nabto_client_stop(context);
+
     nabto_client_stream_free(stream);
     nabto_client_connection_free(connection);
     nabto_client_free(context);
@@ -176,6 +178,7 @@ void reader(NabtoClient* context, NabtoClientStream* stream)
         size_t read = 0;
         nabto_client_stream_read_some(stream, fut, buffer, 1024, &read);
         if (nabto_client_future_wait(fut) != NABTO_CLIENT_EC_OK) {
+            nabto_client_future_free(fut);
             return;
         }
         std::cout << "Received stream data: " << std::string(buffer, read) << std::endl;
