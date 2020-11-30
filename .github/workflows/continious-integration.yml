@@ -27,11 +27,11 @@ jobs:
 
       - if: matrix.os == 'windows-2019'
         name: Test run
-        run: ${{ github.workspace }}/artifact/simple_coap_client.exe
+        run: ${{ github.workspace }}/artifact/heat_pump_client.exe --version
 
       - if: matrix.os != 'windows-2019'
         name: Test run
-        run: ${{ github.workspace }}/artifact/simple_coap_client
+        run: ${{ github.workspace }}/artifact/heat_pump_client --version
 
       - name: Upload artifacts
         if: ${{ success() }}
