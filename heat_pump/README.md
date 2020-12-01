@@ -32,6 +32,5 @@ client will generate a key and store it automatically.
 ## Usage
 
 The first time a client is run, it should be used to pair with the
-heat pump device using the `--pair` or `--pair-string` option. Once
-paired, the remaining heat pump features can be used with the paired
-device.
+heat pump device using the `--pair` option. Once paired, the remaining
+heat pump features can be used with the paired device.
