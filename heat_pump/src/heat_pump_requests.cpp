@@ -15,15 +15,18 @@ bool heat_pump_get(NabtoClient* client, NabtoClientConnection* connection)
 {
     auto coap = coap_get(client, connection, "GET", "/heat-pump");
     if (!coap) {
+        std::cerr << "Failed to get heatpump state" << std::endl;
         return false;
     }
 
     int statusCode = coap_get_response_status_code(coap.get());
     if (statusCode == 403) {
-
+        std::cout << "Access denied, ask an administrator for access" << std::endl;
+        return false;
     }
 
     if (!isOkResponse(statusCode)) {
+        std::cout << "Request failed, status code: " << statusCode << std::endl;
         return false;
     }
 
@@ -54,23 +57,6 @@ NabtoClientCoapPtr coap_post_cbor(NabtoClient* client, NabtoClientConnection* co
         return nullptr;
     }
     return coap;
-}
-
-bool heat_pump_set_name(NabtoClient* client, NabtoClientConnection* connection, const std::string& name)
-{
-    nlohmann::json root;
-    root = name;
-
-    auto coap = coap_post_cbor(client, connection, "POST", "/heat-pump/name", root);
-    int statusCode = coap_get_response_status_code(coap.get());
-    if (isOkResponse(statusCode))
-    {
-        std::cout << "The name of the heat pump is set to " << name << std::endl;
-        return true;
-    } else {
-        handle_coap_error(coap.get());
-        return false;
-    }
 }
 
 bool heat_pump_set_target(NabtoClient* client, NabtoClientConnection* connection, double target)

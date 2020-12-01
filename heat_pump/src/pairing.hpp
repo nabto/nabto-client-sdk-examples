@@ -19,24 +19,6 @@ enum class PairingMode {
     LOCAL_OPEN
 };
 
-
-class ClientSettings {
- public:
-    ClientSettings(const std::string& productId, const std::string& deviceId, const std::string& serverConnectToken)
-        : productId_(productId), deviceId_(deviceId), serverConnectToken_(serverConnectToken)
-    {
-    }
-
-    std::string getProductId() { return productId_; }
-    std::string getDeviceId() { return deviceId_; }
-    std::string getServerConnectToken() { return serverConnectToken_; }
-
- private:
-    std::string productId_;
-    std::string deviceId_;
-    std::string serverConnectToken_;
-};
-
 // response from CoAP GET /pairing
 class PairingResponse {
  public:

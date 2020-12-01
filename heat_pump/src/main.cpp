@@ -248,8 +248,6 @@ int run_heat_pump(NabtoClient* context, cxxopts::ParseResult& options) {
             status = false;
         } else if (options.count("get")) {
             status = nabto::examples::heat_pump::heat_pump_get(context, connection.get());
-        } else if (options.count("set-name")) {
-            status = nabto::examples::heat_pump::heat_pump_set_name(context, connection.get(), options["set-name"].as<std::string>());
         } else if (options.count("set-target")) {
             status = nabto::examples::heat_pump::heat_pump_set_target(context, connection.get(), options["set-target"].as<double>());
         } else if (options.count("set-mode")) {
@@ -327,7 +325,6 @@ int main(int argc, char** argv)
 
     options.add_options("3 - Heatpump")
         ("get", "Get heatpump state")
-        ("set-name", "Set friendly name of the heatpump", cxxopts::value<std::string>())
         ("set-target", "Set target temperature", cxxopts::value<double>())
         ("set-power", "Turn ON or OFF", cxxopts::value<std::string>())
         ("set-mode", "Set heatpump mode, valid modes: COOL, HEAT, FAN, DRY", cxxopts::value<std::string>())
