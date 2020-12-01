@@ -1,6 +1,5 @@
 #include "pairing.hpp"
-
-#include "json_config.hpp"
+#include "util.hpp"
 #include "scanner.hpp"
 
 #include <3rdparty/nlohmann/json.hpp>
@@ -9,52 +8,9 @@
 
 namespace nabto {
 namespace examples {
-namespace common {
+namespace heat_pump {
 
 const static int CONTENT_FORMAT_APPLICATION_CBOR = 60; // rfc 7059
-
-static NabtoClientError connect(NabtoClient* client, NabtoClientConnection* connection)
-{
-    NabtoClientError ec;
-    NabtoClientFuturePtr future(nabto_client_future_new(client));
-
-    nabto_client_connection_connect(connection, future.get());
-
-    ec = nabto_client_future_wait(future.get());
-    if (ec != NABTO_CLIENT_EC_OK) {
-        if (ec == NABTO_CLIENT_EC_NO_CHANNELS) {
-            auto localStatus = nabto_client_connection_get_local_channel_error_code(connection);
-            auto remoteStatus = nabto_client_connection_get_remote_channel_error_code(connection);
-            auto directCandidatesStatus = nabto_client_connection_get_direct_candidates_channel_error_code(connection);
-            NabtoClientError ec2;
-            if (localStatus != NABTO_CLIENT_EC_NONE) {
-                if (localStatus == NABTO_CLIENT_EC_NOT_FOUND) {
-                    std::cerr << "The device was not found on the local network" << std::endl;
-                } else {
-                    std::cerr << "Could not connect locally to the device " << nabto_client_error_get_message(localStatus) << std::endl;
-                }
-                ec2 = ec;
-            }
-            if (remoteStatus != NABTO_CLIENT_EC_NONE) {
-                if (remoteStatus == NABTO_CLIENT_EC_FORBIDDEN) {
-                    std::cerr << "The client is not allowed to make requests to the basestation with the product id and server key combination. Did you remember to add the appropriate application to the product in the console?" << std::endl;
-                } else {
-                    std::cerr << "Could not connect to the device through the basestation " << nabto_client_error_get_message(remoteStatus) << std::endl;
-                }
-                ec2 = ec;
-            }
-            if (directCandidatesStatus != NABTO_CLIENT_EC_NONE) {
-                std::cerr << "Could not connect using direct candidates to the device"  << nabto_client_error_get_message(directCandidatesStatus) << std::endl;
-                ec2 = ec;
-            }
-            return ec2;
-        }
-
-        std::cerr << "Connect failed " << nabto_client_error_get_message(ec) << std::endl;
-        return ec;
-    }
-    return NABTO_CLIENT_EC_OK;
-}
 
 std::string pairingModeAsString(PairingMode mode) {
     if (mode == PairingMode::PASSWORD_OPEN) {
@@ -221,7 +177,14 @@ bool local_initial_pair(NabtoClient* client, NabtoClientConnection* connection)
     uint16_t status;
     nabto_client_coap_get_response_status_code(coap.get(), &status);
     if (status != 201) {
-        // TODO print error
+        void* payload;
+        size_t payloadLength;
+        if (nabto_client_coap_get_response_payload(coap.get(), &payload, &payloadLength) != NABTO_CLIENT_EC_OK) {
+            std::cerr << "Could not pair with the device. Response status: " << status << std::endl;
+        } else {
+            std::string reason((char*)payload, payloadLength);
+            std::cerr << "Could not pair with the device. Response: (" << status << ") " << reason << std::endl;
+        }
         return false;
     }
     return true;
@@ -247,80 +210,18 @@ bool local_open_pair(NabtoClient* client, NabtoClientConnection* connection, con
     uint16_t status;
     nabto_client_coap_get_response_status_code(coap.get(), &status);
     if (status != 201) {
-        // TODO print error
-        return false;
-    }
-    return true;
-    //     std::string reason;
-    //     auto buffer = coap->getResponsePayload();
-    //     reason = std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
-    //     std::cout << "Could not pair with the device status: " << coap->getResponseStatusCode() << " " << reason << std::endl;
-    //     return false;
-    // }
-    // return true;
-}
-
-static bool password_authenticate_connection(NabtoClient* client, NabtoClientConnection* connection, const std::string& username, const std::string& password)
-{
-    NabtoClientFuturePtr future(nabto_client_future_new(client));
-    nabto_client_connection_password_authenticate(connection, username.c_str(), password.c_str(), future.get());
-    NabtoClientError ec = nabto_client_future_wait(future.get());
-    if (ec != NABTO_CLIENT_EC_OK) {
-        std::cerr << "Password authentication failed " << nabto_client_error_get_message(ec) << std::endl;
+        void* payload;
+        size_t payloadLength;
+        if (nabto_client_coap_get_response_payload(coap.get(), &payload, &payloadLength) != NABTO_CLIENT_EC_OK) {
+            std::cerr << "Could not pair with the device. Response status: " << status << std::endl;
+        } else {
+            std::string reason((char*)payload, payloadLength);
+            std::cerr << "Could not pair with the device. Response: (" << status << ") " << reason << std::endl;
+        }
         return false;
     }
     return true;
 }
-
-bool password_pair_password(NabtoClient* client, NabtoClientConnection* connection, const std::string& name, const std::string& password)
-{
-    // the name argument to the function is a friendly name
-    if (!password_authenticate_connection(client, connection, "", password)) {
-        return false;
-    }
-
-    nlohmann::json root;
-    root["Name"] = name;
-
-    NabtoClientCoapPtr coap(nabto_client_coap_new(connection, "POST", "/pairing/password"));
-    std::vector<uint8_t> payload = nlohmann::json::to_cbor(root);
-    nabto_client_coap_set_request_payload(coap.get(), CONTENT_FORMAT_APPLICATION_CBOR, payload.data(), payload.size());
-    NabtoClientFuturePtr future(nabto_client_future_new(client));
-
-    nabto_client_coap_execute(coap.get(), future.get());
-    NabtoClientError ec = nabto_client_future_wait(future.get());
-    if (ec != NABTO_CLIENT_EC_OK) {
-        std::cerr << "Pairing failed " << nabto_client_error_get_message(ec) << std::endl;
-        return false;
-    }
-    uint16_t status;
-    nabto_client_coap_get_response_status_code(coap.get(), &status);
-    if (status == 403) {
-        std::cerr << "Password authentication not allowed" << std::endl;
-        return false;
-    } else if (status == 401) {
-        std::cerr << "The connection is not password authenticated" << std::endl;
-        return false;
-    } else if (status == 400) {
-        std::cerr << "Bad password pairing request" << std::endl;
-        return false;
-    } else if (status == 201) {
-        return true;
-    }
-
-    std::cerr << "Could not do a password pairing with the device status " << status  << std::endl;;
-    return false;
-}
-
-bool password_open_pair(NabtoClient* client, NabtoClientConnection* connection, const std::string& name)
-{
-    std::string password;
-    std::cout << "enter the password which is used to pair with the device." << std::endl;
-    std::cin >> password;
-    return password_pair_password(client, connection, name, password);
-}
-
-
 
 bool interactive_pair(NabtoClient* client, NabtoClientConnection* connection, const std::string& friendlyName)
 {
@@ -367,19 +268,20 @@ bool interactive_pair(NabtoClient* client, NabtoClientConnection* connection, co
     std::string fn;
     std::tie(productId, deviceId, fn) = devices[deviceChoice];
 
-    json options;
+    nlohmann::json options;
     options["Remote"] = false;
     options["ProductId"] = productId;
     options["DeviceId"] = deviceId;
 
-    NabtoClientError ec;
-    ec = nabto_client_connection_set_options(connection, options.dump().c_str());
-    if (ec != NABTO_CLIENT_EC_OK) {
+    if (nabto_client_connection_set_options(connection, options.dump().c_str()) != NABTO_CLIENT_EC_OK) {
         return false;
     }
 
-    ec = connect(client, connection);
-    if (ec != NABTO_CLIENT_EC_OK) {
+    NabtoClientError ec;
+    NabtoClientFuturePtr future(nabto_client_future_new(client));
+    nabto_client_connection_connect(connection, future.get());
+    if ((ec = nabto_client_future_wait(future.get())) != NABTO_CLIENT_EC_OK) {
+        handle_connect_error(connection, ec);
         return false;
     }
 
@@ -396,82 +298,17 @@ bool interactive_pair(NabtoClient* client, NabtoClientConnection* connection, co
     }
 
     if (pr->modes_.count(PairingMode::LOCAL_INITIAL) != 0) {
+        std::cout << "The initial user is not paired. Pairing using local initial pairing" << std::endl;
         if (!local_initial_pair(client, connection)) {
             return false;
         }
     } else if (pr->modes_.count(PairingMode::LOCAL_OPEN) != 0) {
+        std::cout << "Pairing using local open pairing" << std::endl;
         if (!local_open_pair(client, connection, friendlyName)) {
-            return false;
-        }
-    } else if (pr->modes_.count(PairingMode::PASSWORD_OPEN) != 0) {
-        if (!password_open_pair(client, connection, friendlyName)) {
             return false;
         }
     } else {
         std::cout << "No supported pairing mode found" << std::endl;
-        return false;
-    }
-
-
-    return true;
-}
-
-static std::vector<std::string> split(const std::string& s, char delimiter)
-{
-   std::vector<std::string> tokens;
-   std::string token;
-   std::istringstream tokenStream(s);
-   while (std::getline(tokenStream, token, delimiter))
-   {
-      tokens.push_back(token);
-   }
-   return tokens;
-}
-
-static std::map<std::string, std::string> parseStringArgs(const std::string pairingString)
-{
-    // k1=v1,k2=v2
-    std::map<std::string, std::string> args;
-    auto pairs = split(pairingString, ',');
-
-    for (auto p : pairs) {
-        auto kv = split(p, '=');
-        if (kv.size() >= 2) {
-            args[kv[0]] = kv[1];
-        }
-    }
-
-    return args;
-}
-
-bool string_pair(NabtoClient* client, NabtoClientConnection* connection, const std::string& friendlyName, const std::string& pairingString)
-{
-    std::map<std::string, std::string> args = parseStringArgs(pairingString);
-
-    std::string productId = args["p"];
-    std::string deviceId = args["d"];
-    std::string pairingPassword = args["pwd"];
-    std::string serverConnectToken = args["sct"];
-
-    json options;
-    options["ProductId"] = productId;
-    options["DeviceId"] = deviceId;
-    options["ServerConnectToken"] = serverConnectToken;
-
-    NabtoClientError ec;
-    ec = nabto_client_connection_set_options(connection, options.dump().c_str());
-    if (ec != NABTO_CLIENT_EC_OK) {
-        return false;
-    }
-
-    ec = connect(client, connection);
-    if (ec != NABTO_CLIENT_EC_OK) {
-        return false;
-    }
-
-    std::cout << "Connected to device ProductId: " <<  productId << " DeviceId: " << deviceId << std::endl;
-
-    if (!password_pair_password(client, connection, friendlyName, pairingPassword)) {
         return false;
     }
 

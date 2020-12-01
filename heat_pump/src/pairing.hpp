@@ -9,7 +9,7 @@
 
 namespace nabto {
 namespace examples {
-namespace common {
+namespace heat_pump {
 
 enum class PairingMode {
     NONE,
@@ -71,8 +71,6 @@ class User {
 };
 
 bool interactive_pair(NabtoClient* client, NabtoClientConnection* connection, const std::string& friendlyName);
-
-bool string_pair(NabtoClient* client, NabtoClientConnection* connection, const std::string& friendlyName, const std::string& pairingString);
 
 std::unique_ptr<PairingResponse> get_pairing(NabtoClient* client, NabtoClientConnection* connection);
 

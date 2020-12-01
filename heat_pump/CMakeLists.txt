@@ -6,9 +6,7 @@ set(src
   src/iam_requests.cpp
   src/coap_helper.cpp
   src/pairing.cpp
-  src/timestamp.cpp
-  src/client_key.cpp
-  src/json_config.cpp
+  src/util.cpp
   )
 
 add_executable(heat_pump_client ${src})

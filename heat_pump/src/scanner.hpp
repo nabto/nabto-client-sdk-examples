@@ -14,7 +14,7 @@
 
 namespace nabto {
 namespace examples {
-namespace common {
+namespace heat_pump {
 
 
 class Scanner {

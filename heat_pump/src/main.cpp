@@ -1,26 +1,20 @@
-#include "client_state.hpp"
 #include "heat_pump_requests.hpp"
 #include "iam_requests.hpp"
 
 #include "pairing.hpp"
-#include "timestamp.hpp"
-#include "client_key.hpp"
-#include "client_config.hpp"
+#include "util.hpp"
+#include "persistence.hpp"
 #include "nabto_client_ptr.hpp"
 
 #include <nabto/nabto_client.h>
 
-
 #include <3rdparty/cxxopts.hpp>
-
-#include <iostream>
 #include <3rdparty/nlohmann/json.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <thread>
 #include <chrono>
-
 
 #if defined(_WIN32)
 #include <direct.h>
@@ -29,13 +23,9 @@
 #include <sys/types.h>
 #endif
 
-#include "json_config.hpp"
-
 namespace nabto {
 namespace examples {
 namespace heat_pump {
-
-
 
 static std::string clientConfigFileName = "heat_pump_client_config.json";
 static std::string clientStateFileName = "heat_pump_client_state.json";
@@ -48,7 +38,6 @@ static std::string nabtoFolder = "nabto";
 static std::string homeDirEnvVariable = "HOME";
 static std::string nabtoFolder = ".nabto";
 #endif
-
 
 bool makeDirectory(const std::string& directory)
 {
@@ -127,24 +116,7 @@ bool connect(NabtoClient* context, NabtoClientConnection* connection, const std:
 
     ec = nabto_client_future_wait(future.get());
     if (ec != NABTO_CLIENT_EC_OK) {
-        if (ec == NABTO_CLIENT_EC_NO_CHANNELS) {
-            std::cerr << "A connection could not be created to the device. None of the possible channels was able to create a connection" << std::endl;
-            auto localStatus = nabto_client_connection_get_local_channel_error_code(connection);
-            auto remoteStatus = nabto_client_connection_get_remote_channel_error_code(connection);
-            auto directCandidatesStatus = nabto_client_connection_get_direct_candidates_channel_error_code(connection);
-            if (localStatus != NABTO_CLIENT_EC_NONE) {
-                std::cerr << "The local channel failed with the error " << nabto_client_error_get_message(localStatus) << std::endl;
-            }
-
-            if (remoteStatus != NABTO_CLIENT_EC_NONE) {
-                std::cerr << "The remote channel failed with the error " << nabto_client_error_get_message(remoteStatus) << std::endl;
-            }
-            if (directCandidatesStatus != NABTO_CLIENT_EC_NONE) {
-                std::cerr << "The direct candidates channel failed the the error " << nabto_client_error_get_message(directCandidatesStatus) << std::endl;
-            }
-        } else {
-            std::cerr << "A connection could not be created reason: " << nabto_client_error_get_message(ec) << std::endl;
-        }
+        handle_connect_error(connection, ec);
         return false;
     }
 
@@ -163,12 +135,12 @@ bool connect(NabtoClient* context, NabtoClientConnection* connection, const std:
 
 bool write_client_state(NabtoClient* client, NabtoClientConnection* connection, const std::string& homedir)
 {
-    std::unique_ptr<nabto::examples::common::PairingResponse> pr = nabto::examples::common::get_pairing(client, connection);
+    std::unique_ptr<PairingResponse> pr = get_pairing(client, connection);
     if (!pr) {
         std::cerr << "CoAP GET /pairing failed" << std::endl;
     }
 
-    std::unique_ptr<nabto::examples::common::User> user = nabto::examples::common::get_me(client, connection);
+    std::unique_ptr<User> user = get_me(client, connection);
     if (!user) {
         std::cerr << "CoAP GET /iam/me failed" << std::endl;
     }
@@ -190,6 +162,19 @@ void log_callback(const NabtoClientLogMessage* message, void* data) {
     std::cout << time_in_HH_MM_SS_MMM() << "[" << std::string(message->severityString) << "] " << std::string(message->message) << std::endl;
 }
 
+bool create_private_key(const std::string& keyFile, NabtoClient* context, NabtoClientConnection* connection)
+{
+    bool res; char* s; NabtoClientError ec;
+    if ((ec = nabto_client_create_private_key(context, &s)) != NABTO_CLIENT_EC_OK) {
+        std::cerr << "Failed to create new private key: " << nabto_client_error_get_message(ec) << std::endl;
+        return false;
+    } else if (!(res = File::writeFile(keyFile, std::string(s)))) {
+        std::cerr << "Failed to write to key file " << keyFile << " ensure it is accessable" << std::endl;
+    }
+    nabto_client_string_free(s);
+    return res;
+}
+
 } } } // namespace
 
 
@@ -209,12 +194,29 @@ int run_heat_pump(NabtoClient* context, cxxopts::ParseResult& options) {
         NabtoClientConnectionPtr connection(nabto_client_connection_new(context));
 
         // load the private key for the client/connection
-        if (!nabto::examples::common::ClientKey::loadKey(homedir, context, connection.get()))
         {
-            return 1;
+            std::stringstream ss;
+            ss << homedir << "/keys/client.key";
+            std::string keyFile = ss.str();
+            if (!nabto::examples::heat_pump::File::exists(keyFile) &&
+                !nabto::examples::heat_pump::create_private_key(keyFile, context, connection.get()))
+            {
+                std::cerr << "Private key file creation failed" << std::endl;
+                return 1;
+            }
+
+            std::string keyContent;
+            // load private key and load key into connection
+            if (!nabto::examples::heat_pump::File::readFile(keyFile, keyContent) ||
+                nabto_client_connection_set_private_key(connection.get(), keyContent.c_str()) != NABTO_CLIENT_EC_OK)
+            {
+                std::cerr << "Failed to load private key from file: " << keyFile << std::endl;
+                return 1;
+            }
         }
 
-        if (!nabto::examples::common::ClientConfig::loadClientConfig(homedir, nabto::examples::heat_pump::clientConfigFileName, nabto::examples::heat_pump::defaultClientServerKey, connection.get())) {
+
+        if (!nabto::examples::heat_pump::ClientConfig::loadClientConfig(homedir, nabto::examples::heat_pump::clientConfigFileName, nabto::examples::heat_pump::defaultClientServerKey, connection.get())) {
             return 1;
         }
 
@@ -223,24 +225,16 @@ int run_heat_pump(NabtoClient* context, cxxopts::ParseResult& options) {
         if (user != NULL) {
             userName = std::string(user);
         }
-        if (options.count("pair") || options.count("pair-string")) {
-            if (options.count("pair")) {
-                if (!nabto::examples::common::interactive_pair(context, connection.get(), userName)) {
-                    std::cerr << "Could not pair with the device" << std::endl;
-                    return 1;
-                }
-            } else {
-                if (!nabto::examples::common::string_pair(context, connection.get(), userName, options["pair-string"].as<std::string>())) {
-                    return 1;
-                }
+        if (options.count("pair")) {
+            if (!nabto::examples::heat_pump::interactive_pair(context, connection.get(), userName)) {
+                std::cerr << "Could not pair with the device" << std::endl;
+                return 1;
             }
             if (!nabto::examples::heat_pump::write_client_state(context, connection.get(), homedir)) {
                 std::cerr << "Could not write client state" << std::endl;
                 return 1;
             }
             std::cout << "Paired with the device" << std::endl;
-
-            nabto_client_stop(context);
             return 0;
         }
 
@@ -318,7 +312,7 @@ int main(int argc, char** argv)
 
     options.add_options("1 - Pairing")
         ("pair", "Pair with a heat pump interactively")
-        ("pair-string", "Pair with a heat pump using a connection string", cxxopts::value<std::string>());
+        ;
 
     options.add_options("2 - IAM")
         ("users", "List all the users in the heat pump")
@@ -336,7 +330,8 @@ int main(int argc, char** argv)
         ("set-name", "Set friendly name of the heatpump", cxxopts::value<std::string>())
         ("set-target", "Set target temperature", cxxopts::value<double>())
         ("set-power", "Turn ON or OFF", cxxopts::value<std::string>())
-        ("set-mode", "Set heatpump mode, valid modes: COOL, HEAT, FAN, DRY", cxxopts::value<std::string>());
+        ("set-mode", "Set heatpump mode, valid modes: COOL, HEAT, FAN, DRY", cxxopts::value<std::string>())
+        ;
 
     try {
         cxxopts::ParseResult result = options.parse(argc, argv);
