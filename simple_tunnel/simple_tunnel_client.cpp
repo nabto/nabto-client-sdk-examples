@@ -54,19 +54,19 @@ int main(int argc, char** argv) {
     {
         cxxopts::Options options(argv[0], "Nabto Edge Simple CoAP client");
         options.add_options()
-            ("u,serverurl", "Optional Server URL for the Nabto basestation", cxxopts::value<std::string>())
+            ("s,serverurl", "Optional. Server URL for the Nabto basestation", cxxopts::value<std::string>())
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
             ("p,productid", "Product ID to use", cxxopts::value<std::string>())
-            ("s,serverkey", "Server key of the app", cxxopts::value<std::string>())
+            ("k,serverkey", "Server key of the app", cxxopts::value<std::string>())
             ("service", "The id of the tcp tunnel service which is defined in the device.", cxxopts::value<std::string>(service))
-            ("local-port", "The local port for the tunnel", cxxopts::value<uint16_t>(localPort)->default_value("0"))
-            ("log-level", "The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
-            ("force-remote", "Force the client to connect remote, not using local discovery")
+            ("local-port", "Optional. The local port for the tunnel", cxxopts::value<uint16_t>(localPort)->default_value("0"))
+            ("log-level", "Optional. The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
+            ("force-remote", "Optional. Force the client to connect remote, not using local discovery")
             ("h,help", "Shows this help text");
         auto result = options.parse(argc, argv);
 
         if (result.count("help")) {
-            std::cout << options.help({"", "Group"}) << std::endl;
+            std::cout << options.help() << std::endl;
             exit(0);
         }
 
@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
     std::cout << "The service is exposed at TCP 127.0.0.1:" << localPort << std::endl;
 
     
-    std::cout << "Press enter to continue...";
+    std::cout << "Press enter to quit...";
     std::cin.get();
 
     nabto_client_tcp_tunnel_stop(tunnel);

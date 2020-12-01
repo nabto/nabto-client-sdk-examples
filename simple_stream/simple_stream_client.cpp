@@ -39,20 +39,19 @@ int main(int argc, char** argv)
     try
     {
         cxxopts::Options options(argv[0], "Nabto stream echo client example.");
-        options.add_options("Options")
-            ("s,serverurl", "Optional Server URL for the Nabto basestation", cxxopts::value<std::string>())
+        options.add_options()
+            ("s,serverurl", "Optional. Server URL for the Nabto basestation", cxxopts::value<std::string>())
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
             ("p,productid", "Product ID to use", cxxopts::value<std::string>())
             ("k,serverkey", "Server key of the app", cxxopts::value<std::string>())
-            ("server-jwt-token", "Optional jwt token to validate the client", cxxopts::value<std::string>()->default_value(""))
-            ("log-level", "The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
-            ("force-remote", "Force the client to connect remote, not using local discovery")
+            ("log-level", "Optional. The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
+            ("force-remote", "Optional. Force the client to connect remote, not using local discovery")
             ("h,help", "Shows this help text");
         auto result = options.parse(argc, argv);
 
         if (result.count("help"))
         {
-            std::cout << options.help({"", "Group"}) << std::endl;
+            std::cout << options.help() << std::endl;
             exit(0);
         }
         if(result.count("serverurl")) {
@@ -78,9 +77,6 @@ int main(int argc, char** argv)
         }
         if(result.count("force-remote")) {
             opts["Local"] = false;
-        }
-        if(result.count("server-jwt-token")) {
-            opts["ServerJwtToken"] = result["server-jwt-token"].as<std::string>();
         }
         logLevel = result["log-level"].as<std::string>();
     }

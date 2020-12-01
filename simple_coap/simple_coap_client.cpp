@@ -115,14 +115,13 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
     {
         cxxopts::Options options(argv[0], "Nabto Edge Simple CoAP client");
         options.add_options()
-            ("s,serverurl", "Optional Server URL for the Nabto basestation", cxxopts::value<std::string>())
+            ("s,serverurl", "Optional. Server URL for the Nabto basestation", cxxopts::value<std::string>())
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
             ("p,productid", "Product ID to use", cxxopts::value<std::string>())
             ("k,serverkey", "Server key of the app", cxxopts::value<std::string>())
-            ("server-jwt-token", "Optional jwt token to validate the client", cxxopts::value<std::string>()->default_value(""))
-            ("r,request", "The coap request path to use. Ie. /hello-world", cxxopts::value<std::string>()->default_value("/hello-world"))
-            ("log-level", "The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
-            ("force-remote", "Force the client to connect remote, not using local discovery")
+            ("r,request", "Optional. The coap request path to use. Ie. /hello-world", cxxopts::value<std::string>()->default_value("/hello-world"))
+            ("log-level", "Optional. The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
+            ("force-remote", "Optional. Force the client to connect remote, not using local discovery")
             ("h,help", "Shows this help text");
         auto result = options.parse(argc, argv);
 
@@ -154,9 +153,6 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
         }
         if(result.count("force-remote")) {
             (*opts)["Local"] = false;
-        }
-        if(result.count("server-jwt-token")) {
-            (*opts)["ServerJwtToken"] = result["server-jwt-token"].as<std::string>();
         }
 
         *request = result["request"].as<std::string>();

@@ -1,4 +1,4 @@
-set(src coap_client.cpp)
+set(src simple_coap_client.cpp)
 
 add_executable(simple_coap_client "${src}")
 target_link_libraries(simple_coap_client nabto_client)

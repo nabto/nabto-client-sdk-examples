@@ -1,6 +1,6 @@
 find_package( Threads )
 
-set(src stream_echo_client.cpp)
+set(src simple_stream_client.cpp)
 
 add_executable(simple_stream_client "${src}")
 target_link_libraries(simple_stream_client nabto_client ${CMAKE_THREAD_LIBS_INIT})
