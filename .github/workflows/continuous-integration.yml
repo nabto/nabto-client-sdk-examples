@@ -25,7 +25,7 @@ jobs:
       - name: Build
         run: cmake --build build --target install
 
-        name: Test run
+      - name: Test run
         run: |
           ${{ github.workspace }}/artifact/heat_pump_client.exe --version
           ${{ github.workspace }}/artifact/simple_coap_client.exe --help
