@@ -86,6 +86,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+    std::cout << "Nabto Client SDK Version: " << nabto_client_version() << std::endl;
     std::cout << "connecting to " << opts["ProductId"].get<std::string>() << "." << opts["DeviceId"].get<std::string>() << std::endl;
 
     NabtoClient* context = nabto_client_new();

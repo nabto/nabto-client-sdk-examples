@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 
     std::string service;
     uint16_t localPort;
-    
+
     try
     {
         cxxopts::Options options(argv[0], "Nabto Edge Simple CoAP client");
@@ -109,6 +109,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
+    std::cout << "Nabto Client SDK Version: " << nabto_client_version() << std::endl;
     std::cout << "connecting to " << opts["ProductId"].get<std::string>() << "." << opts["DeviceId"].get<std::string>() << std::endl;
 
     NabtoClient* context = NULL;
@@ -162,7 +163,6 @@ int main(int argc, char** argv) {
     std::cout << "Opened a connection to the device and opened a tunnel to the service: " << service << std::endl;
     std::cout << "The service is exposed at TCP 127.0.0.1:" << localPort << std::endl;
 
-    
     std::cout << "Press enter to quit...";
     std::cin.get();
 
