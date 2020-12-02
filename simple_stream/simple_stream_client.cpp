@@ -12,6 +12,12 @@
 
 #include <thread>
 
+#if defined(WIN32)
+const std::string eofSequence = "Ctrl+z";
+#else
+const std::string eofSequence = "Ctrl+d";
+#endif
+
 static void reader(NabtoClient* context, NabtoClientStream* stream);
 
 void die(std::string msg, cxxopts::Options options) {
@@ -131,7 +137,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    std::cout << "Stream opened. Type data to send and press <enter> to send. Send the EOF character (crtl+d) to close stream." << std::endl;
+    std::cout << "Stream opened. Type data to send and press <enter> to send. Send the EOF character (" << eofSequence << ") to close stream." << std::endl;
     std::thread t(reader, context, stream);
 
     // TODO: sigInt signal handler
