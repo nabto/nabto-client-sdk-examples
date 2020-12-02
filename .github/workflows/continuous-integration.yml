@@ -25,13 +25,12 @@ jobs:
       - name: Build
         run: cmake --build build --target install
 
-      - if: matrix.os == 'windows-2019'
         name: Test run
-        run: ${{ github.workspace }}/artifact/heat_pump_client.exe --version
-
-      - if: matrix.os != 'windows-2019'
-        name: Test run
-        run: ${{ github.workspace }}/artifact/heat_pump_client --version
+        run: |
+          ${{ github.workspace }}/artifact/heat_pump_client.exe --version
+          ${{ github.workspace }}/artifact/simple_coap_client.exe --help
+          ${{ github.workspace }}/artifact/simple_stream_client.exe --help
+          ${{ github.workspace }}/artifact/simple_tunnel_client.exe --help
 
       - name: Upload artifacts
         if: ${{ success() }}
