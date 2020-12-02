@@ -11,7 +11,7 @@ cmake -DCMAKE_INSTALL_PREFIX=install ..
 cmake --build . --config Release --target install
 ```
 
-The built binaries is now in the folder named `_build/install`
+The built binaries is located in the folder named `_build/install`
 
 ## Simple CoAP
 The simple CoAP example illustrates how to connect to a device and
