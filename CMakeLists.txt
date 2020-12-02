@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(nabto-client-sdk)
 
-include_directories(include .)
+include_directories(include)
 
 if(WIN32)
   link_directories(${CMAKE_SOURCE_DIR}/lib/windows)
