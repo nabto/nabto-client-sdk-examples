@@ -86,6 +86,42 @@ bool users(NabtoClient* client, NabtoClientConnection* connection)
     return true;
 }
 
+// list all roles on the system
+bool roles(NabtoClient* client, NabtoClientConnection* connection)
+{
+    // CoAP GET /iam/roles
+
+    NabtoClientCoapPtr coap = coap_get(client, connection, "GET", "/iam/roles");
+
+    if (coap == nullptr) {
+        return false;
+    }
+
+    int statusCode = coap_get_response_status_code(coap.get());
+    if (statusCode == 403) {
+        std::cerr << "You are not allowed to get the roles list" << std::endl;
+        return false;
+    } else if (statusCode == 205) {
+        // ok
+    } else {
+        std::cerr << "Could not get the roles list, status code " << statusCode << std::endl;
+        return false;
+    }
+
+    nlohmann::json rolesList;
+    if (!coap_get_cbor_response_data(coap.get(), rolesList)) {
+        return false;
+    }
+
+    if (!rolesList.is_array()) {
+        return false;
+    }
+
+    std::cout << "Roles: " << rolesList << std::endl;
+
+    return true;
+}
+
 // show a specific user from the system
 bool user_get(NabtoClient* client, NabtoClientConnection* connection, const std::string& user)
 {

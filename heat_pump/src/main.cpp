@@ -258,6 +258,8 @@ int run_heat_pump(NabtoClient* context, cxxopts::ParseResult& options) {
             status = nabto::examples::heat_pump::user_me(context, connection.get());
         } else if (options.count("users")) {
             status = nabto::examples::heat_pump::users(context, connection.get());
+        } else if (options.count("roles")) {
+            status = nabto::examples::heat_pump::roles(context, connection.get());
         } else if (options.count("user-get")) {
             if (!options.count("user")) {
                 std::cerr << "Missing --user argument" << std::endl;
