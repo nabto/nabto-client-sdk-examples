@@ -6,6 +6,10 @@ project(nabto-client-sdk)
 
 include_directories(include)
 
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "install" CACHE PATH "..." FORCE)
+endif()
+
 if(WIN32)
   link_directories(${CMAKE_SOURCE_DIR}/lib/windows)
 elseif(UNIX AND NOT APPLE)

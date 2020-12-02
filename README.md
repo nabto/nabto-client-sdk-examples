@@ -7,9 +7,11 @@ Example applications for Nabto Edge Client SDK.
 ```
 mkdir _build
 cd _build
-cmake -DCMAKE_INSTALL_PREFIX=../_install ..
+cmake -DCMAKE_INSTALL_PREFIX=install ..
 cmake --build . --config Release --target install
 ```
+
+The built binaries is now in the folder named `_build/install`
 
 ## Simple CoAP
 The simple CoAP example illustrates how to connect to a device and
