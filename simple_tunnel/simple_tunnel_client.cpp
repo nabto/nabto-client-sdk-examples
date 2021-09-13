@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 
     try
     {
-        cxxopts::Options options(argv[0], "Nabto Edge Simple CoAP client");
+        cxxopts::Options options(argv[0], "Nabto Edge Simple Tunnel client");
         options.add_options()
             ("s,serverurl", "Optional. Server URL for the Nabto basestation", cxxopts::value<std::string>())
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
