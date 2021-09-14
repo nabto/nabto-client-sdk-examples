@@ -15,6 +15,7 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <cstdlib>
 
 #if defined(_WIN32)
 #include <direct.h>
@@ -53,7 +54,7 @@ bool makeDirectories(const std::string& in)
 {
     std::string homeDir;
     if (in.empty()) {
-        char* tmp = getenv(homeDirEnvVariable.c_str());
+        char* tmp = std::getenv(homeDirEnvVariable.c_str());
         if (tmp == NULL) {
             return false;
         }
@@ -183,7 +184,7 @@ int run_heat_pump(NabtoClient* context, cxxopts::ParseResult& options) {
         if (options.count("home-dir")) {
             homedir = options["home-dir"].as<std::string>();
         } else {
-            char* tmp = getenv(nabto::examples::heat_pump::homeDirEnvVariable.c_str());
+            char* tmp = std::getenv(nabto::examples::heat_pump::homeDirEnvVariable.c_str());
             if (tmp == NULL) {
                 homedir = ".";
             } else {
@@ -221,7 +222,7 @@ int run_heat_pump(NabtoClient* context, cxxopts::ParseResult& options) {
         }
 
         std::string userName = "default";
-        const char* user = getenv("USER");
+        const char* user = std::getenv("USER");
         if (user != NULL) {
             userName = std::string(user);
         }

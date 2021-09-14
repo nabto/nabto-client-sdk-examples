@@ -13,6 +13,8 @@ add_executable(heat_pump_client ${src})
 
 target_link_libraries(heat_pump_client nabto_client ${CMAKE_THREAD_LIBS_INIT})
 
+target_compile_definitions(heat_pump_client PRIVATE -D_CRT_SECURE_NO_WARNINGS)
+
 install(TARGETS heat_pump_client RUNTIME DESTINATION .
   PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 

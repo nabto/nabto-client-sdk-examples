@@ -28,7 +28,7 @@ class File {
                             std::istreambuf_iterator<char>());
             content = str;
             return true;
-        } catch (std::exception &e) {
+        } catch (std::exception &) {
             return false;
         }
     }
@@ -39,7 +39,7 @@ class File {
             std::ofstream f(path);
             f << content;
             return true;
-        } catch (std::exception &e) {
+        } catch (std::exception &) {
             return false;
         }
     }
@@ -82,7 +82,7 @@ class ClientState {
         nlohmann::json j;
         try {
             j = nlohmann::json::parse(content);
-        } catch (std::exception& e) {
+        } catch (std::exception& ) {
             return nullptr;
         }
 
@@ -96,7 +96,7 @@ class ClientState {
             deviceId = j["DeviceId"].get<std::string>();
             deviceFingerprint = j["DeviceFingerprint"].get<std::string>();
             serverConnectToken = j["ServerConnectToken"].get<std::string>();
-        } catch (std::exception& e) {
+        } catch (std::exception& ) {
             return nullptr;
         }
 
@@ -158,7 +158,7 @@ class ClientConfig
         nlohmann::json c;
         try {
             c = nlohmann::json::parse(clientConfigString);
-        } catch (std::exception& e) {
+        } catch (std::exception& ) {
             // could not load json, thats an unrecoverable error
             return false;
         }
@@ -169,7 +169,7 @@ class ClientConfig
             if (ec != NABTO_CLIENT_EC_OK) {
                 return false;
             }
-        } catch (std::exception& e) {
+        } catch (std::exception& ) {
             // could not load client key, thats an unrecoverable error
             return false;
         }
@@ -180,7 +180,7 @@ class ClientConfig
             if (ec != NABTO_CLIENT_EC_OK) {
                 return false;
             }
-        } catch (std::exception& e) {
+        } catch (std::exception& ) {
             // could not load client server url, that's an optional parameter.
         }
         return true;
