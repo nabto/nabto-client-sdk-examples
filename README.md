@@ -2,6 +2,18 @@
 
 Example applications for Nabto Edge Client SDK.
 
+## Nabto Edge Client Libraries
+
+All the below example client applications depend on the Nabto Edge Client
+SDK. This consists of some headers and some libraries. These
+files are copied to this repository from the Nabto Edge Client SDK
+release: https://github.com/nabto/nabto5-releases
+
+  * linux x86-64 `lib/linux/libnabto_client.so`
+  * mac x86-64 `lib/macos/libnabto_client.dylib`
+  * windows x86-64 `lib/windows/nabto_client.lib` `lib/windows/nabto_client.dll`
+  * common headers `include/nabto_client.h` `include/nabto_client_experimental.h`
+
 ## Building
 
 ```
@@ -114,15 +126,3 @@ like getting the state of the heat pump:
 ./heat_pump/heat_pump_client --get
 ```
 
-
-## Nabto Edge Client Libraries
-
-The example client application depends on the Nabto Edge Client
-libraries. These consists of some headers and some libraries. These
-files are copied to this repository from the Nabto Edge Client SDK
-release.
-
-  * linux x86-64 `lib/linux/libnabto_client.so`
-  * mac x86-64 `lib/macos/libnabto_client.dylib`
-  * windows x86-64 `lib/windows/nabto_client.lib` `lib/windows/nabto_client.dll`
-  * common headers `include/nabto_client.h` `include/nabto_client_experimental.h`
