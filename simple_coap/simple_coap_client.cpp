@@ -11,7 +11,7 @@
 #include <fstream>
 
 void print_connect_error(NabtoClientError ec, NabtoClientConnection* connection);
-void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel);
+void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel, std::string* postData);
 
 void die(std::string msg, cxxopts::Options options) {
     std::cout << msg << std::endl;
@@ -34,8 +34,9 @@ int main(int argc, char** argv) {
     nlohmann::json opts;
     std::string path;
     std::string logLevel;
+    std::string postData;
 
-    parse_options(argc, argv, &opts, &path, &logLevel);
+    parse_options(argc, argv, &opts, &path, &logLevel, &postData);
 
     std::cout << "Nabto Client SDK Version: " << nabto_client_version() << std::endl;
     std::cout << "connecting to " << opts["ProductId"].get<std::string>() << "." << opts["DeviceId"].get<std::string>() << std::endl;
@@ -70,7 +71,13 @@ int main(int argc, char** argv) {
         nabto_client_string_free(f);
     }
 
-    NabtoClientCoap* request = nabto_client_coap_new(connection, "GET", path.c_str());
+    NabtoClientCoap* request;
+    if (postData.size() > 0) {
+        request = nabto_client_coap_new(connection, "POST", path.c_str());
+        nabto_client_coap_set_request_payload(request, NABTO_CLIENT_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8, postData.data(), postData.size());
+    } else {
+        request = nabto_client_coap_new(connection, "GET", path.c_str());
+    }
     uint16_t statusCode;
 
     nabto_client_coap_execute(request, fut);
@@ -78,14 +85,18 @@ int main(int argc, char** argv) {
         std::cout << "CoAP execution error: " << nabto_client_error_get_message(ec) << std::endl;
     } else if ((ec = nabto_client_coap_get_response_status_code(request, &statusCode)) != NABTO_CLIENT_EC_OK) {
         std::cout << "Failed to get CoAP response status code: " << nabto_client_error_get_message(ec) << std::endl;
-    } else if (statusCode != 205) {
+    } else if (postData.size() == 0 && statusCode != 205) {
         std::cout << "Unexpected CoAP response status code: " << statusCode << std::endl;
-    } else {
+    } else if (postData.size() > 0 && statusCode != 204) {
+        std::cout << "Unexpected CoAP response status code: " << statusCode << std::endl;
+    } else if (postData.size() == 0) {
         void* payload = NULL;
         size_t payloadLength = 0;
         nabto_client_coap_get_response_payload(request, &payload, &payloadLength);
         std::string responseData((const char*)payload, payloadLength);
-        std::cout << "Received CoAP response data: " << responseData << std::endl;
+        std::cout << "Received CoAP get response data: " << responseData << std::endl;
+    } else {
+        std::cout << "Received CoAP post response OK" << std::endl;
     }
     nabto_client_coap_free(request);
 
@@ -110,7 +121,7 @@ void print_connect_error(NabtoClientError ec, NabtoClientConnection* connection)
     exit(1);
 }
 
-void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel)
+void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel, std::string* postData)
 {
     try
     {
@@ -119,8 +130,9 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
             ("s,serverurl", "Optional. Server URL for the Nabto basestation", cxxopts::value<std::string>())
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
             ("p,productid", "Product ID to use", cxxopts::value<std::string>())
-            ("k,serverkey", "Server key of the app", cxxopts::value<std::string>())
+            ("k,serverkey", "Server key of the app, required for remote connect", cxxopts::value<std::string>()->default_value(""))
             ("r,request", "Optional. The coap request path to use. Ie. /hello-world", cxxopts::value<std::string>()->default_value("/hello-world"))
+            ("P,post", "optional. String data to post to the device", cxxopts::value<std::string>()->default_value(""))
             ("log-level", "Optional. The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
             ("force-remote", "Optional. Force the client to connect remote, not using local discovery")
             ("h,help", "Shows this help text");
@@ -146,7 +158,6 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
         } else {
             die("no product ID provided", options);
         }
-
         if(result.count("serverkey")) {
             (*opts)["ServerKey"] = result["serverkey"].as<std::string>();
         } else {
@@ -158,6 +169,7 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
 
         *request = result["request"].as<std::string>();
         *logLevel = result["log-level"].as<std::string>();
+        *postData = result["post"].as<std::string>();
     }
     catch (const cxxopts::OptionException& e)
     {
