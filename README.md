@@ -35,7 +35,7 @@ be
 [configured in the basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html). From
 this configuration, the client requires the Product ID and Device ID
 of the device to connect to and the server key of an App configured
-for the Product. The client can then be run using:
+for the Product. The App should be configured with authentication type `NONE` as this example does not use SCTs. The client can then be run using:
 
 ```
 ./simple_coap/simple_coap_client -d <Device ID (de-...)> -p <Product ID (pr-...)> -k <ServerKey (sk-...)>
@@ -52,7 +52,7 @@ be
 [configured in the basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html). From
 this configuration, the client requires the Product ID and Device ID
 of the device to connect to and the server key of an App configured
-for the Product. The client can then be run using:
+for the Product. The App should be configured with authentication type `NONE` as this example does not use SCTs. The client can then be run using:
 
 ```
 ./simple_stream/simple_stream_client -d <Device ID (de-...)> -p <Product ID (pr-...)> -k <ServerKey (sk-...)>
@@ -73,7 +73,7 @@ be
 [configured in the basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html). From
 this configuration, the client requires the Product ID and Device ID
 of the device to connect to and the server key of an App configured
-for the Product. The client can then be run using:
+for the Product. The App should be configured with authentication type `NONE` as this example does not use SCTs. The client can then be run using:
 
 ```
 ./simple_tunnel/simple_tunnel_client -d <Device ID (de-...)> -p <Product ID (pr-...)> -s <ServerKey (sk-...)> --service ssh
@@ -109,7 +109,12 @@ the
 module for authentication and authorization using
 the
 [heat pump](https://github.com/nabto/nabto-embedded-sdk/tree/master/examples/heat_pump) example
-device. The IAM module restricts access to the device until the client
+device. Before running the device, it should be
+[configured in the basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html). From
+this configuration, the client requires the Product ID and Device ID
+of the device to connect to and the server key of an App configured
+for the Product. The App should can be configured with any authentication type, as the IAM module handles SCTs.
+The IAM module restricts access to the device until the client
 has completed a pairing process. The IAM module in the heat pump
 device is configured to only allow clients to pair from the local
 network. Once the device is up and running, the client can be paired
