@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [windows-2019, ubuntu-18.04, macos-10.15]
+        os: [windows-2022, ubuntu-22.04, macos-12]
 
     steps:
       - uses: actions/checkout@v2
@@ -42,7 +42,7 @@ jobs:
   release-assets:
     name: Release Assets
     needs: build
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         binary: [simple_coap_client, simple_stream_client, simple_tunnel_client, heat_pump_client]
@@ -50,15 +50,15 @@ jobs:
     steps:
       - uses: actions/download-artifact@v2
         with:
-          name: artifacts_ubuntu-16.04
+          name: artifacts_ubuntu-22.04
           path: linux
       - uses: actions/download-artifact@v2
         with:
-          name: artifacts_windows-2019
+          name: artifacts_windows-2022
           path: windows
       - uses: actions/download-artifact@v2
         with:
-          name: artifacts_macos-10.15
+          name: artifacts_macos-12
           path: macos
       - name: List assets
         run: ls -R
