@@ -26,6 +26,7 @@ endif()
 
 add_subdirectory(simple_coap)
 add_subdirectory(simple_direct_candidates)
+add_subdirectory(simple_password_authentication)
 add_subdirectory(simple_tunnel)
 add_subdirectory(simple_stream)
 add_subdirectory(heat_pump)
