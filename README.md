@@ -26,57 +26,53 @@ cmake --build . --config Release --target install
 The built binaries is located in the folder named `_build/install`
 
 ## Simple CoAP
-The simple CoAP example illustrates how to connect to a device and
-invoke a CoAP endpoint. This example is intented to use with
-the
-[simple_coap](https://docs.nabto.com/developer/guides/get-started/embedded/examples.html) device
-example. Before running the device, it should
-be
-[configured in the basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html). From
-this configuration, the client requires the Product ID and Device ID
-of the device to connect to and the server key of an App configured
-for the Product. The App should be configured with authentication type `NONE` as this example does not use SCTs. The client can then be run using:
+The simple CoAP example illustrates how to connect to a device and invoke a CoAP
+endpoint. This example is intented to use with the
+[simple_coap](https://docs.nabto.com/developer/guides/get-started/embedded/examples.html)
+device example. Before running the device, it should be [configured in the
+basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html).
+From this configuration, the client requires the Product ID and Device ID of the
+device to connect to. The device example uses a predefined demo SCT, so running
+this example does not require a server key or SCT to be provided. The client can
+then be run using:
 
 ```
-./simple_coap/simple_coap_client -d <Device ID (de-...)> -p <Product ID (pr-...)> -k <ServerKey (sk-...)>
+./simple_coap/simple_coap_client -d <Device ID (de-...)> -p <Product ID (pr-...)>
 ```
 
 ## Simple Stream
-The simple stream example illustrates how to connect to a device and
-open a stream to send data to and from the device. This example is
-intented to use with
+The simple stream example illustrates how to connect to a device and open a
+stream to send data to and from the device. This example is intented to use with
 the
-[simple_stream](https://github.com/nabto/nabto-embedded-sdk/tree/master/examples/simple_stream) device
-example. Before running the device, it should
-be
-[configured in the basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html). From
-this configuration, the client requires the Product ID and Device ID
-of the device to connect to and the server key of an App configured
-for the Product. The App should be configured with authentication type `NONE` as this example does not use SCTs. The client can then be run using:
+[simple_stream](https://github.com/nabto/nabto-embedded-sdk/tree/master/examples/simple_stream)
+device example. Before running the device, it should be [configured in the
+basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html).
+From this configuration, the client requires the Product ID and Device ID of the
+device to connect to. The device example uses a predefined demo SCT, so running
+this example does not require a server key or SCT to be provided. The client can
+then be run using:
 
 ```
-./simple_stream/simple_stream_client -d <Device ID (de-...)> -p <Product ID (pr-...)> -k <ServerKey (sk-...)>
+./simple_stream/simple_stream_client -d <Device ID (de-...)> -p <Product ID (pr-...)>
 ```
 
-When the client is connected, stream data can be typed into the
-application and send to the device which will echo the data back to
-the client.
+When the client is connected, stream data can be typed into the application and
+send to the device which will echo the data back to the client.
 
 ## Simple Tunnel
-The simple tunnel example illustrates how to connect to a device and
-open a TCP tunnel to make an SSH connection to the device. This
-example is intented to use with
-the
-[simple_tunnel](https://github.com/nabto/nabto-embedded-sdk/tree/master/examples/simple_tunnel) device
-example. Before running the device, it should
-be
-[configured in the basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html). From
-this configuration, the client requires the Product ID and Device ID
-of the device to connect to and the server key of an App configured
-for the Product. The App should be configured with authentication type `NONE` as this example does not use SCTs. The client can then be run using:
+The simple tunnel example illustrates how to connect to a device and open a TCP
+tunnel to make an SSH connection to the device. This example is intented to use
+with the
+[simple_tunnel](https://github.com/nabto/nabto-embedded-sdk/tree/master/examples/simple_tunnel)
+device example. Before running the device, it should be [configured in the
+basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html).
+From this configuration, the client requires the Product ID and Device ID of the
+device to connect to. The device example uses a predefined demo SCT, so running
+this example does not require a server key or SCT to be provided. The client can
+then be run using:
 
 ```
-./simple_tunnel/simple_tunnel_client -d <Device ID (de-...)> -p <Product ID (pr-...)> -s <ServerKey (sk-...)> --service ssh
+./simple_tunnel/simple_tunnel_client -d <Device ID (de-...)> -p <Product ID (pr-...)> --service ssh
 ```
 
 When the client is connected, it will print the endpoint exposed
@@ -130,4 +126,3 @@ like getting the state of the heat pump:
 ```
 ./heat_pump/heat_pump_client --get
 ```
-
