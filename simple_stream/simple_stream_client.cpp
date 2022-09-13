@@ -50,6 +50,7 @@ int main(int argc, char** argv)
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
             ("p,productid", "Product ID to use", cxxopts::value<std::string>())
             ("k,serverkey", "Server key of the app", cxxopts::value<std::string>())
+            ("t,sct", "Server connect token from the device", cxxopts::value<std::string>()->default_value("demosct"))
             ("log-level", "Optional. The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
             ("force-remote", "Optional. Force the client to connect remote, not using local discovery")
             ("h,help", "Shows this help text");
@@ -63,6 +64,8 @@ int main(int argc, char** argv)
         if(result.count("serverurl")) {
             opts["ServerUrl"] = result["serverurl"].as<std::string>();
         }
+
+        opts["ServerConnectToken"] = result["sct"].as<std::string>();
 
         if(result.count("deviceid")) {
             opts["DeviceId"] = result["deviceid"].as<std::string>();

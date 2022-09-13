@@ -130,7 +130,8 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
             ("s,serverurl", "Optional. Server URL for the Nabto basestation", cxxopts::value<std::string>())
             ("d,deviceid", "Device ID to connect to", cxxopts::value<std::string>())
             ("p,productid", "Product ID to use", cxxopts::value<std::string>())
-            ("k,serverkey", "Server key of the app, required for remote connect", cxxopts::value<std::string>()->default_value(""))
+            ("k,serverkey", "Optional. Server key of the app, required for remote connect if sct set to empty string", cxxopts::value<std::string>()->default_value(""))
+            ("t,sct", "Optional. Server connect token from device used for remote connect", cxxopts::value<std::string>()->default_value("demosct"))
             ("r,request", "Optional. The coap request path to use. Ie. /hello-world", cxxopts::value<std::string>()->default_value("/hello-world"))
             ("P,post", "optional. String data to post to the device", cxxopts::value<std::string>()->default_value(""))
             ("log-level", "Optional. The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
@@ -160,9 +161,10 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
         }
         if(result.count("serverkey")) {
             (*opts)["ServerKey"] = result["serverkey"].as<std::string>();
-        } else {
-            std::cout << "No Server Key provided, remote connections will not be possible" << std::endl;
         }
+
+        (*opts)["ServerConnectToken"] = result["sct"].as<std::string>();
+
         if(result.count("force-remote")) {
             (*opts)["Local"] = false;
         }
