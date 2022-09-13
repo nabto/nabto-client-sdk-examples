@@ -98,31 +98,30 @@ device. The device then connects a TCP socket to port `22` on the
 device.
 
 
-## Heat Pump
-The Heat pump client example illustrates using
+## Thermostat
+The Thermostat client example illustrates using
 the
 [Nabto IAM](https://docs.nabto.com/developer/guides/iam/intro.html)
 module for authentication and authorization using
 the
-[heat pump](https://github.com/nabto/nabto-embedded-sdk/tree/master/examples/heat_pump) example
+[Thermostat](https://github.com/nabto/nabto-embedded-sdk/tree/master/examples/thermostat) example
 device. Before running the device, it should be
 [configured in the basestation](https://docs.nabto.com/developer/guides/get-started/embedded/applications.html). From
 this configuration, the client requires the Product ID and Device ID
-of the device to connect to and the server key of an App configured
-for the Product. The App should can be configured with any authentication type, as the IAM module handles SCTs.
+of the device to connect to.
 The IAM module restricts access to the device until the client
-has completed a pairing process. The IAM module in the heat pump
+has completed a pairing process. The IAM module in the thermostat
 device is configured to only allow clients to pair from the local
 network. Once the device is up and running, the client can be paired
 interactively while on the same LAN as the device using:
 
 ```
-./heat_pump/heat_pump_client --pair
+./thermostat/thermostat_client --pair
 ```
 
 Once paired, other the client can access the remaining device features
-like getting the state of the heat pump:
+like getting the state of the thermostat:
 
 ```
-./heat_pump/heat_pump_client --get
+./thermostat/thermostat_client --get
 ```

@@ -1,7 +1,7 @@
 name: Continuous Integration
 
 on:
-  push:    
+  push:
   pull_request:
     branches: [ master ]
   release:
@@ -26,7 +26,7 @@ jobs:
 
       - name: Test run
         run: |
-          ${{ github.workspace }}/artifact/heat_pump_client --version
+          ${{ github.workspace }}/artifact/thermostat_client --version
           ${{ github.workspace }}/artifact/simple_coap_client --help
           ${{ github.workspace }}/artifact/simple_stream_client --help
           ${{ github.workspace }}/artifact/simple_tunnel_client --help
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        binary: [simple_coap_client, simple_stream_client, simple_tunnel_client, heat_pump_client]
+        binary: [simple_coap_client, simple_stream_client, simple_tunnel_client, thermostat_client]
     if: github.event_name == 'release' && success()
     steps:
       - uses: actions/download-artifact@v2
