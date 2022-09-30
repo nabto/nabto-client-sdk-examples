@@ -217,7 +217,7 @@ bool set_friendly_name(NabtoClient* client, NabtoClientConnection* connection, c
 
     int statusCode = coap_get_response_status_code(coap.get());
     if (statusCode == 403) {
-        std::cerr << "You are not allowed to add the role to the user" << std::endl;
+        std::cerr << "You are not allowed to set friendly name" << std::endl;
         return false;
     }
     std::cout << "Friendly name set successfully" << std::endl;
