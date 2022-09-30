@@ -219,6 +219,9 @@ bool set_friendly_name(NabtoClient* client, NabtoClientConnection* connection, c
     if (statusCode == 403) {
         std::cerr << "You are not allowed to set friendly name" << std::endl;
         return false;
+    } else if (statusCode == 404) {
+        std::cerr << "Friendly name does not exist in device. You may need to update your device to a new version of the Embedded SDK.";
+        return false;
     }
     std::cout << "Friendly name set successfully" << std::endl;
     return true;
