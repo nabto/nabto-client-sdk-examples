@@ -202,5 +202,59 @@ bool user_set_role(NabtoClient* client, NabtoClientConnection* connection, const
     return true;
 }
 
+bool set_friendly_name(NabtoClient* client, NabtoClientConnection* connection, const std::string& fn)
+{
+    // CoAP PUT /iam/device-info/friendly-name
+
+    nlohmann::json root;
+    root = fn;
+
+    NabtoClientCoapPtr coap = coap_post_cbor(client, connection, "PUT", "/iam/device-info/friendly-name", root);
+
+    if (coap == nullptr) {
+        return false;
+    }
+
+    int statusCode = coap_get_response_status_code(coap.get());
+    if (statusCode == 403) {
+        std::cerr << "You are not allowed to set friendly name" << std::endl;
+        return false;
+    } else if (statusCode == 404) {
+        std::cerr << "Friendly name does not exist in device. You may need to update your device to a new version of the Embedded SDK.";
+        return false;
+    }
+    std::cout << "Friendly name set successfully" << std::endl;
+    return true;
+}
+
+
+bool device_info(NabtoClient* client, NabtoClientConnection* connection)
+{
+    // CoAP GET /iam/pairing
+    NabtoClientCoapPtr coap = coap_get(client, connection, "GET", "/iam/pairing");
+
+    if (coap == nullptr) {
+        return false;
+    }
+
+    int statusCode = coap_get_response_status_code(coap.get());
+    if (statusCode == 403) {
+        std::cerr << "You are not allowed to get device info " << std::endl;
+        return false;
+    } else if (statusCode == 205) {
+        // ok
+    } else {
+        std::cerr << "Could not get device info, status code " << statusCode << std::endl;
+        return false;
+    }
+
+    nlohmann::json deviceInfo;
+    if (!coap_get_cbor_response_data(coap.get(), deviceInfo)) {
+        return false;
+    }
+    std::cout << deviceInfo.dump(4) << std::endl;
+
+    return true;
+}
 
 } } } // namespace

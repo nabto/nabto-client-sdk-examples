@@ -13,6 +13,8 @@ bool roles(NabtoClient* client, NabtoClientConnection* connection);
 bool user_get(NabtoClient* client, NabtoClientConnection* connection, const std::string& user);
 bool user_remove(NabtoClient* client, NabtoClientConnection* connection, const std::string& user);
 bool user_set_role(NabtoClient* client, NabtoClientConnection* connection, const std::string& user, const std::string& role);
+bool set_friendly_name(NabtoClient* client, NabtoClientConnection* connection, const std::string& fn);
+bool device_info(NabtoClient* client, NabtoClientConnection* connection);
 
 
 } } } // namespace

@@ -297,6 +297,10 @@ int run_thermostat(NabtoClient* context, cxxopts::ParseResult& options) {
             } else {
                 status = nabto::examples::thermostat::user_set_role(context, connection.get(), options["user"].as<std::string>(), options["role"].as<std::string>());
             }
+        } else if (options.count("set-friendly-name")) {
+            status = nabto::examples::thermostat::set_friendly_name(context, connection.get(), options["set-friendly-name"].as<std::string>());
+        } else if (options.count("get-device-info")) {
+            status = nabto::examples::thermostat::device_info(context, connection.get());
         } else {
             std::cerr << "No such command" << std::endl;
             status = false;
@@ -337,6 +341,8 @@ int main(int argc, char** argv)
         ("user-get", "Get a user from the system")
         ("user-remove", "Remove a user from the system")
         ("user-set-role", "Set a role for a user.")
+        ("set-friendly-name", "Set the friendly name of the device.", cxxopts::value<std::string>())
+        ("get-device-info","Get information about the device configuration")
         ;
 
     options.add_options("3 - Thermostat")
