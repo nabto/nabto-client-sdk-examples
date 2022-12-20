@@ -302,8 +302,7 @@ int run_thermostat(NabtoClient* context, cxxopts::ParseResult& options) {
         } else if (options.count("get-device-info")) {
             status = nabto::examples::thermostat::device_info(context, connection.get());
         } else {
-            std::cerr << "No such command" << std::endl;
-            status = false;
+            throw std::invalid_argument("No command was provided.");
         }
 
         nabto::examples::thermostat::close(context, connection.get());
@@ -386,6 +385,11 @@ int main(int argc, char** argv)
         return r;
     } catch (cxxopts::OptionParseException& e) {
         std::cerr << "The options could not be parsed. " << e.what() << std::endl;
+        std::cerr << options.help() << std::endl;
+        return 1;
+    }
+    catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
         std::cerr << options.help() << std::endl;
         return 1;
     }
