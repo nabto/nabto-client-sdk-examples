@@ -43,6 +43,9 @@ jobs:
     name: Release Assets
     needs: build
     runs-on: ubuntu-22.04
+    permissions:
+      # allow the job to upload assets to the release
+      contents: write
     strategy:
       matrix:
         binary: [simple_coap_client, simple_stream_client, simple_tunnel_client, thermostat_client]
