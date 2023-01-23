@@ -40,6 +40,11 @@ jobs:
           ${{ github.workspace }}/${{ matrix.installFolder }}/simple_stream_client --help
           ${{ github.workspace }}/${{ matrix.installFolder }}/simple_tunnel_client --help
 
+      - name: list files
+        working-directory: ${{ github.workspace }}
+        run: pwd
+
+
       - name: Pack artifacts
         working-directory: ${{ github.workspace }}
         run: ${{ matrix.compressionCommand }} ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
