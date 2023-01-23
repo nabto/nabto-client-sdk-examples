@@ -41,7 +41,7 @@ jobs:
           ${{ github.workspace }}/${{ matrix.installFolder }}/simple_tunnel_client --help
 
       - name: Pack artifacts
-        run: ${{ matrix.compressionCommand }} ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
+        run: ${{ matrix.compressionCommand }} ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }} ${{ github.workspace }}/${{ matrix.installFolder }}
 
       - name: Upload artifacts
         if: ${{ success() }}
