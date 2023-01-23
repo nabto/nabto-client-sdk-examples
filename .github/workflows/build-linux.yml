@@ -22,32 +22,35 @@ jobs:
             compression: "tar.gz"
             compressionCommand: "tar -czf"
 
+    # The runners working directory is ${{ github.workspace }} which is /home/runner/work/nabto-client-sdk-examples/
+    # Where as the docker runners homedir is /__w/nabto-client-sdk-examples/nabto-client-sdk-examples
+
     steps:
       - name: Install sw
         run: apt-get update -y && apt-get install -y cmake build-essential git
       - uses: actions/checkout@v3
 
       - name: Configure cmake
-        run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/${{ matrix.installFolder }} ..
+        run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=`pwd`/../${{ matrix.installFolder }} ..
 
       - name: Build
         run: cmake --build build --target install
 
       - name: Test run
         run: |
-          ${{ github.workspace }}/${{ matrix.installFolder }}/thermostat_client --version
-          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_coap_client --help
-          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_stream_client --help
-          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_tunnel_client --help
+          ./${{ matrix.installFolder }}/thermostat_client --version
+          ./${{ matrix.installFolder }}/simple_coap_client --help
+          ./${{ matrix.installFolder }}/simple_stream_client --help
+          ./${{ matrix.installFolder }}/simple_tunnel_client --help
 
-      - name: list files
-        working-directory: ${{ github.workspace }}
-        run: pwd
+      - name: show current directory
+        run: |
+          pwd
+          ls
 
 
       - name: Pack artifacts
-        working-directory: ${{ github.workspace }}
-        run: ${{ matrix.compressionCommand }} ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
+        run: ${{ matrix.compressionCommand }} ${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
 
       - name: list files
         run: ls
