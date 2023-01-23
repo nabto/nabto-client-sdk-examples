@@ -1,5 +1,8 @@
 find_package( Threads )
 
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
+include(InstallRequiredSystemLibraries)
+
 set(src simple_stream_client.cpp)
 
 add_executable(simple_stream_client "${src}")

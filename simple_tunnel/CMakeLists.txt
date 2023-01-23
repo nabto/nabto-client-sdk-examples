@@ -1,3 +1,6 @@
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
+include(InstallRequiredSystemLibraries)
+
 set(src simple_tunnel_client.cpp)
 
 add_executable(simple_tunnel_client "${src}")

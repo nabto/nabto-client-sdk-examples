@@ -1,5 +1,8 @@
 find_package( Threads )
 
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
+include(InstallRequiredSystemLibraries)
+
 set(src
   src/main.cpp
   src/thermostat_requests.cpp
