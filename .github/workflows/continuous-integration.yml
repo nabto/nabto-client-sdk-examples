@@ -13,16 +13,12 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-22.04, macos-12]
+        os: [windows-2022, macos-12]
         include:
           - os: windows-2022
             installFolder: "nabto-client-sdk-examples-windows_x86-64"
             compression: "zip"
             compressionCommand: "7z a"
-          - os: ubuntu-22.04
-            installFolder: "nabto-client-sdk-examples-linux_x86-64"
-            compression: "tar.gz"
-            compressionCommand: "tar -czf"
           - os: macos-12
             installFolder: "nabto-client-sdk-examples-macos-universal"
             compression: "tar.gz"
@@ -47,6 +43,55 @@ jobs:
 
       - name: Pack artifacts
         run: ${{ matrix.compressionCommand }} ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
+
+      - name: Upload artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v3
+        with:
+          path: ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }}
+          if-no-files-found: warn
+
+  build-linux:
+    # seperate build since it runs inside a container
+    name: Build
+    runs-on: ${{matrix.os}}
+    container:
+      image: ubuntu:18.04
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+        include:
+          - os: ubuntu-22.04
+            installFolder: "nabto-client-sdk-examples-linux_x86-64"
+            compression: "tar.gz"
+            compressionCommand: "tar -czf"
+
+    # The runners working directory is ${{ github.workspace }} which is /home/runner/work/nabto-client-sdk-examples/
+    # Where as the docker runners homedir is /__w/nabto-client-sdk-examples/nabto-client-sdk-examples
+
+    steps:
+      - name: Install sw
+        run: apt-get update -y && apt-get install -y cmake build-essential git
+      - uses: actions/checkout@v3
+
+      - name: Configure cmake
+        run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=`pwd`/../${{ matrix.installFolder }} ..
+
+      - name: Build
+        run: cmake --build build --target install
+
+      - name: Test run
+        run: |
+          ./${{ matrix.installFolder }}/thermostat_client --version
+          ./${{ matrix.installFolder }}/simple_coap_client --help
+          ./${{ matrix.installFolder }}/simple_stream_client --help
+          ./${{ matrix.installFolder }}/simple_tunnel_client --help
+
+      - name: Pack artifacts
+        run: ${{ matrix.compressionCommand }} ${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
+
+      - name: list files
+        run: ls
 
       - name: Upload artifacts
         if: ${{ success() }}
