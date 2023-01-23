@@ -23,6 +23,8 @@ jobs:
             compressionCommand: "tar -czf"
 
     steps:
+      - name: Install sw
+        run: apt-get update -y && apt-get install -y cmake build-essential git
       - uses: actions/checkout@v3
 
       - name: Configure cmake
