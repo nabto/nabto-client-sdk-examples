@@ -1,0 +1,77 @@
+name: Linux Release
+
+on:
+  push:
+  pull_request:
+    branches: [ master ]
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{matrix.os}}
+    container:
+      image: ubuntu:18.04
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+        include:
+          - os: ubuntu-22.04
+            installFolder: "nabto-client-sdk-examples-linux_x86-64"
+            compression: "tar.gz"
+            compressionCommand: "tar -czf"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure cmake
+        run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/${{ matrix.installFolder }} ..
+
+      - name: Build
+        run: cmake --build build --target install
+
+      - name: Test run
+        run: |
+          ${{ github.workspace }}/${{ matrix.installFolder }}/thermostat_client --version
+          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_coap_client --help
+          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_stream_client --help
+          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_tunnel_client --help
+
+      - name: Pack artifacts
+        run: ${{ matrix.compressionCommand }} ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
+
+      - name: Upload artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v3
+        with:
+          path: ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }}
+          if-no-files-found: warn
+
+  release-assets:
+    name: Release Assets
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      # allow the job to upload assets to the release
+      contents: write
+    strategy:
+      matrix:
+        binary: [nabto-client-sdk-examples-linux_x86-64.tar.gz]
+    if: github.event_name == 'release' && success()
+    steps:
+      - name:  download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./
+      - name: list files
+        run: ls -R
+      - name: Upload Source Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{matrix.binary}}
+          asset_name: ${{matrix.binary}}
+          asset_content_type: application/octet-stream
