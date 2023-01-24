@@ -35,7 +35,7 @@ macro(install_dependencies TARGET)
       ${CMAKE_INSTALL_NAME_TOOL} -change
       @rpath/libnabto_client.dylib
       @executable_path/libnabto_client.dylib
-      $<TARGET_FILE:simple_coap_client>)
+      $<TARGET_FILE:${TARGET}>)
     install(FILES ${CMAKE_SOURCE_DIR}/nabto_client_sdk_library/lib/macos-universal/libnabto_client.dylib DESTINATION .)
   endif()
   install(FILES ${CMAKE_SOURCE_DIR}/nabto_client_sdk_library/third-party-licenses.md DESTINATION .)
