@@ -2,29 +2,6 @@
 
 Example applications for Nabto Edge Client SDK.
 
-## Nabto Edge Client Libraries
-
-All the below example client applications depend on the Nabto Edge Client
-SDK. This consists of some headers and some libraries. These
-files are copied to this repository from the Nabto Edge Client SDK
-release: https://github.com/nabto/nabto5-releases
-
-  * linux x86-64 `lib/linux/libnabto_client.so`
-  * mac x86-64 `lib/macos/libnabto_client.dylib`
-  * windows x86-64 `lib/windows/nabto_client.lib` `lib/windows/nabto_client.dll`
-  * common headers `include/nabto_client.h` `include/nabto_client_experimental.h`
-
-## Building
-
-```
-mkdir _build
-cd _build
-cmake -DCMAKE_INSTALL_PREFIX=install ..
-cmake --build . --config Release --target install
-```
-
-The built binaries is located in the folder named `_build/install`
-
 ## Simple CoAP
 The simple CoAP example illustrates how to connect to a device and invoke a CoAP
 endpoint. This example is intented to use with the
@@ -124,4 +101,32 @@ like getting the state of the thermostat:
 
 ```
 ./thermostat/thermostat_client --get
+```
+
+
+## Building
+
+```
+mkdir _build
+cd _build
+cmake -DCMAKE_INSTALL_PREFIX=install ..
+cmake --build . --config Release --target install
+```
+
+The built binaries is located in the folder named `_build/install`
+
+## Nabto Edge Client Libraries
+
+All the example client applications depend on the Nabto Edge Client SDK. This
+consists of some headers and some libraries. These files are copied to the
+`nabto_client_sdk_library` folder from the Nabto Edge Client SDK releases repository:
+https://github.com/nabto/nabto-client-sdk-releases
+
+The library can easily be updated to a new version by running the below command
+or manually copying the desired version of the artifacts to this repository.
+
+E.g. to update client libraries to v5.12.0 one can use the following command.
+```
+cd nabto_client_sdk_library
+curl -sSL https://github.com/nabto/nabto-client-sdk-releases/archive/refs/tags/v5.12.0.tar.gz | tar -xzf - --strip-components=1
 ```

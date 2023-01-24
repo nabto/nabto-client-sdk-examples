@@ -13,30 +13,91 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-22.04, macos-12]
+        os: [windows-2022, macos-12]
+        include:
+          - os: windows-2022
+            installFolder: "nabto-client-sdk-examples-windows_x86-64"
+            compression: "zip"
+            compressionCommand: "7z a"
+          - os: macos-12
+            installFolder: "nabto-client-sdk-examples-macos-universal"
+            compression: "tar.gz"
+            compressionCommand: "tar -czf"
+
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Configure cmake
-        run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifact ..
+        run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/${{ matrix.installFolder }} ..
 
       - name: Build
         run: cmake --build build --target install
 
       - name: Test run
         run: |
-          ${{ github.workspace }}/artifact/thermostat_client --version
-          ${{ github.workspace }}/artifact/simple_coap_client --help
-          ${{ github.workspace }}/artifact/simple_stream_client --help
-          ${{ github.workspace }}/artifact/simple_tunnel_client --help
+          ${{ github.workspace }}/${{ matrix.installFolder }}/thermostat_client --version
+          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_coap_client --help
+          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_stream_client --help
+          ${{ github.workspace }}/${{ matrix.installFolder }}/simple_tunnel_client --help
+
+      - name: Pack artifacts
+        run: ${{ matrix.compressionCommand }} ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
 
       - name: Upload artifacts
         if: ${{ success() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: artifacts_${{matrix.os}}
-          path: ${{ github.workspace }}/artifact
+          path: ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }}
+          if-no-files-found: warn
+
+  build-linux:
+    # seperate build since it runs inside a container
+    name: Build
+    runs-on: ${{matrix.os}}
+    container:
+      image: ubuntu:18.04
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+        include:
+          - os: ubuntu-22.04
+            installFolder: "nabto-client-sdk-examples-linux_x86-64"
+            compression: "tar.gz"
+            compressionCommand: "tar -czf"
+
+    # The runners working directory is ${{ github.workspace }} which is /home/runner/work/nabto-client-sdk-examples/
+    # Where as the docker runners homedir is /__w/nabto-client-sdk-examples/nabto-client-sdk-examples
+
+    steps:
+      - name: Install sw
+        run: apt-get update -y && apt-get install -y cmake build-essential git
+      - uses: actions/checkout@v3
+
+      - name: Configure cmake
+        run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=`pwd`/../${{ matrix.installFolder }} ..
+
+      - name: Build
+        run: cmake --build build --target install
+
+      - name: Test run
+        run: |
+          ./${{ matrix.installFolder }}/thermostat_client --version
+          ./${{ matrix.installFolder }}/simple_coap_client --help
+          ./${{ matrix.installFolder }}/simple_stream_client --help
+          ./${{ matrix.installFolder }}/simple_tunnel_client --help
+
+      - name: Pack artifacts
+        run: ${{ matrix.compressionCommand }} ${{ matrix.installFolder }}.${{ matrix.compression }} ${{ matrix.installFolder }}
+
+      - name: list files
+        run: ls
+
+      - name: Upload artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v3
+        with:
+          path: ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }}
           if-no-files-found: warn
 
   release-assets:
@@ -48,47 +109,21 @@ jobs:
       contents: write
     strategy:
       matrix:
-        binary: [simple_coap_client, simple_stream_client, simple_tunnel_client, thermostat_client]
+        binary: [nabto-client-sdk-examples-windows_x86-64.zip, nabto-client-sdk-examples-linux_x86-64.tar.gz, nabto-client-sdk-examples-macos-universal.tar.gz]
     if: github.event_name == 'release' && success()
     steps:
-      - uses: actions/download-artifact@v2
+      - name:  download artifacts
+        uses: actions/download-artifact@v3
         with:
-          name: artifacts_ubuntu-22.04
-          path: linux
-      - uses: actions/download-artifact@v2
-        with:
-          name: artifacts_windows-2022
-          path: windows
-      - uses: actions/download-artifact@v2
-        with:
-          name: artifacts_macos-12
-          path: macos
-      - name: List assets
+          path: ./
+      - name: list files
         run: ls -R
-      - name: Upload linux asset
+      - name: Upload Source Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: linux/${{ matrix.binary}}
-          asset_name: ${{ matrix.binary}}_linux
-          asset_content_type: application/octet-stream
-      - name: Upload windows asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: windows/${{ matrix.binary}}.exe
-          asset_name: ${{ matrix.binary}}_windows.exe
-          asset_content_type: application/octet-stream
-      - name: Upload mac asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: macos/${{ matrix.binary}}
-          asset_name: ${{ matrix.binary}}_macos
+          asset_path: ./${{matrix.binary}}
+          asset_name: ${{matrix.binary}}
           asset_content_type: application/octet-stream
