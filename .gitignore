@@ -5,6 +5,7 @@ _install
 *#
 *~
 
+nabto_client_sdk_library/include/nabto/nabto_client_android.h
 nabto_client_sdk_library/lib/linux-aarch64
 nabto_client_sdk_library/lib/linux-armhf
 nabto_client_sdk_library/lib/windows-i386
