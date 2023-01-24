@@ -25,6 +25,24 @@ elseif(APPLE)
   add_definitions("-Wall")
 endif()
 
+macro(install_dependencies TARGET)
+  if(WIN32)
+    install(FILES ${CMAKE_SOURCE_DIR}/nabto_client_sdk_library/lib/windows-x86_64/nabto_client.dll DESTINATION .)
+  elseif(UNIX AND NOT APPLE)
+    install(FILES ${CMAKE_SOURCE_DIR}/nabto_client_sdk_library/lib/linux-x86_64/libnabto_client.so DESTINATION .)
+  elseif(APPLE)
+    add_custom_command(TARGET simple_coap_client POST_BUILD COMMAND
+      ${CMAKE_INSTALL_NAME_TOOL} -change
+      @rpath/libnabto_client.dylib
+      @executable_path/libnabto_client.dylib
+      $<TARGET_FILE:simple_coap_client>)
+    install(FILES ${CMAKE_SOURCE_DIR}/nabto_client_sdk_library/lib/macos-universal/libnabto_client.dylib DESTINATION .)
+  endif()
+  install(FILES ${CMAKE_SOURCE_DIR}/nabto_client_sdk_library/third-party-licenses.md DESTINATION .)
+  install(FILES ${CMAKE_SOURCE_DIR}/README.md DESTINATION .)
+endmacro()
+
+
 add_subdirectory(simple_coap)
 add_subdirectory(simple_direct_candidates)
 add_subdirectory(simple_password_authentication)
