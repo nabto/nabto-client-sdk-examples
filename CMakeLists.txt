@@ -31,7 +31,7 @@ macro(install_dependencies TARGET)
   elseif(UNIX AND NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/nabto_client_sdk_library/lib/linux-x86_64/libnabto_client.so DESTINATION .)
   elseif(APPLE)
-    add_custom_command(TARGET simple_coap_client POST_BUILD COMMAND
+    add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND
       ${CMAKE_INSTALL_NAME_TOOL} -change
       @rpath/libnabto_client.dylib
       @executable_path/libnabto_client.dylib
