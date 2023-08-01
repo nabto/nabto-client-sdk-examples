@@ -37,76 +37,87 @@ int main(int argc, char** argv) {
     std::string postData;
 
     parse_options(argc, argv, &opts, &path, &logLevel, &postData);
-
-    std::cout << "Nabto Client SDK Version: " << nabto_client_version() << std::endl;
+    int i = 0;
+    while (1) {
+        std::cout << "Nabto Client SDK Version: " << nabto_client_version() << std::endl;
     std::cout << "connecting to " << opts["ProductId"].get<std::string>() << "." << opts["DeviceId"].get<std::string>() << std::endl;
+        NabtoClient* context = nabto_client_new();
 
-    NabtoClient* context = nabto_client_new();
+        nabto_client_set_log_callback(context, &log, NULL);
+        nabto_client_set_log_level(context, logLevel.c_str());
 
-    nabto_client_set_log_callback(context, &log, NULL);
-    nabto_client_set_log_level(context, logLevel.c_str());
+        NabtoClientConnection* connection = nabto_client_connection_new(context);
 
-    NabtoClientConnection* connection = nabto_client_connection_new(context);
+        char* privateKey;
+        nabto_client_create_private_key(context, &privateKey);
 
-    char* privateKey;
-    nabto_client_create_private_key(context, &privateKey);
+        opts["PrivateKey"] = std::string(privateKey);
+        nabto_client_string_free(privateKey);
 
-    opts["PrivateKey"] = std::string(privateKey);
-    nabto_client_string_free(privateKey);
+        nabto_client_connection_set_options(connection, opts.dump().c_str());
 
-    nabto_client_connection_set_options(connection, opts.dump().c_str());
+        NabtoClientFuture* fut = nabto_client_future_new(context);
+        nabto_client_connection_connect(connection, fut);
 
-    NabtoClientFuture* fut = nabto_client_future_new(context);
-    nabto_client_connection_connect(connection, fut);
+        NabtoClientError ec = nabto_client_future_wait(fut);
 
-    NabtoClientError ec = nabto_client_future_wait(fut);
+        char* f;
+        if (ec != NABTO_CLIENT_EC_OK) {
+            print_connect_error(ec, connection);
+        }
+        else if (nabto_client_connection_get_device_fingerprint_hex(connection, &f) != NABTO_CLIENT_EC_OK) {
+            std::cerr << "could not get remote peer fingerprint" << std::endl;
+        }
+        else {
+            std::cout << "Connected to device with fingerprint: " << std::string(f) << std::endl;
+            nabto_client_string_free(f);
+        }
 
-    char* f;
-    if (ec != NABTO_CLIENT_EC_OK) {
-        print_connect_error(ec, connection);
-    } else if (nabto_client_connection_get_device_fingerprint_hex(connection, &f) != NABTO_CLIENT_EC_OK) {
-        std::cerr << "could not get remote peer fingerprint" << std::endl;
-    } else {
-        std::cout << "Connected to device with fingerprint: " << std::string(f) << std::endl;
-        nabto_client_string_free(f);
+        NabtoClientCoap* request;
+        if (postData.size() > 0) {
+            request = nabto_client_coap_new(connection, "POST", path.c_str());
+            nabto_client_coap_set_request_payload(request, NABTO_CLIENT_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8, postData.data(), postData.size());
+        }
+        else {
+            request = nabto_client_coap_new(connection, "GET", path.c_str());
+        }
+        uint16_t statusCode;
+
+        nabto_client_coap_execute(request, fut);
+        if ((ec = nabto_client_future_wait(fut)) != NABTO_CLIENT_EC_OK) {
+            std::cout << "CoAP execution error: " << nabto_client_error_get_message(ec) << std::endl;
+        }
+        else if ((ec = nabto_client_coap_get_response_status_code(request, &statusCode)) != NABTO_CLIENT_EC_OK) {
+            std::cout << "Failed to get CoAP response status code: " << nabto_client_error_get_message(ec) << std::endl;
+        }
+        else if (postData.size() == 0 && statusCode != 205) {
+            std::cout << "Unexpected CoAP response status code: " << statusCode << std::endl;
+        }
+        else if (postData.size() > 0 && statusCode != 204) {
+            std::cout << "Unexpected CoAP response status code: " << statusCode << std::endl;
+        }
+        else if (postData.size() == 0) {
+            void* payload = NULL;
+            size_t payloadLength = 0;
+            nabto_client_coap_get_response_payload(request, &payload, &payloadLength);
+            std::string responseData((const char*)payload, payloadLength);
+            std::cout << "Received CoAP get response data: " << responseData << std::endl;
+        }
+        else {
+            std::cout << "Received CoAP post response OK" << std::endl;
+        }
+        nabto_client_coap_free(request);
+
+        nabto_client_connection_close(connection, fut);
+        nabto_client_future_wait(fut);
+        nabto_client_stop(context);
+
+        nabto_client_future_free(fut);
+        nabto_client_connection_free(connection);
+        nabto_client_free(context);
+
+        std::cout << "Iteration " << i++ << std::endl;
     }
-
-    NabtoClientCoap* request;
-    if (postData.size() > 0) {
-        request = nabto_client_coap_new(connection, "POST", path.c_str());
-        nabto_client_coap_set_request_payload(request, NABTO_CLIENT_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8, postData.data(), postData.size());
-    } else {
-        request = nabto_client_coap_new(connection, "GET", path.c_str());
-    }
-    uint16_t statusCode;
-
-    nabto_client_coap_execute(request, fut);
-    if ((ec = nabto_client_future_wait(fut)) != NABTO_CLIENT_EC_OK) {
-        std::cout << "CoAP execution error: " << nabto_client_error_get_message(ec) << std::endl;
-    } else if ((ec = nabto_client_coap_get_response_status_code(request, &statusCode)) != NABTO_CLIENT_EC_OK) {
-        std::cout << "Failed to get CoAP response status code: " << nabto_client_error_get_message(ec) << std::endl;
-    } else if (postData.size() == 0 && statusCode != 205) {
-        std::cout << "Unexpected CoAP response status code: " << statusCode << std::endl;
-    } else if (postData.size() > 0 && statusCode != 204) {
-        std::cout << "Unexpected CoAP response status code: " << statusCode << std::endl;
-    } else if (postData.size() == 0) {
-        void* payload = NULL;
-        size_t payloadLength = 0;
-        nabto_client_coap_get_response_payload(request, &payload, &payloadLength);
-        std::string responseData((const char*)payload, payloadLength);
-        std::cout << "Received CoAP get response data: " << responseData << std::endl;
-    } else {
-        std::cout << "Received CoAP post response OK" << std::endl;
-    }
-    nabto_client_coap_free(request);
-
-    nabto_client_connection_close(connection, fut);
-    nabto_client_future_wait(fut);
-    nabto_client_stop(context);
-
-    nabto_client_future_free(fut);
-    nabto_client_connection_free(connection);
-    nabto_client_free(context);
 }
 
 void print_connect_error(NabtoClientError ec, NabtoClientConnection* connection)
@@ -118,7 +129,7 @@ void print_connect_error(NabtoClientError ec, NabtoClientConnection* connection)
               << std::endl << "Remote error code "
               << nabto_client_error_get_message(nabto_client_connection_get_remote_channel_error_code(connection))
               << std::endl;
-    exit(1);
+    //exit(1);
 }
 
 void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel, std::string* postData)
