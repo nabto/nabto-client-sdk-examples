@@ -11,7 +11,7 @@
 #include <fstream>
 
 void print_connect_error(NabtoClientError ec, NabtoClientConnection* connection);
-void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel, std::string* postData);
+void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel, std::string* postData, uint16_t* contentFormat);
 
 void die(std::string msg, cxxopts::Options options) {
     std::cout << msg << std::endl;
@@ -35,8 +35,9 @@ int main(int argc, char** argv) {
     std::string path;
     std::string logLevel;
     std::string postData;
+    uint16_t contentFormat;
 
-    parse_options(argc, argv, &opts, &path, &logLevel, &postData);
+    parse_options(argc, argv, &opts, &path, &logLevel, &postData, &contentFormat);
 
     std::cout << "Nabto Client SDK Version: " << nabto_client_version() << std::endl;
     std::cout << "connecting to " << opts["ProductId"].get<std::string>() << "." << opts["DeviceId"].get<std::string>() << std::endl;
@@ -74,7 +75,7 @@ int main(int argc, char** argv) {
     NabtoClientCoap* request;
     if (postData.size() > 0) {
         request = nabto_client_coap_new(connection, "POST", path.c_str());
-        nabto_client_coap_set_request_payload(request, NABTO_CLIENT_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8, postData.data(), postData.size());
+        nabto_client_coap_set_request_payload(request, contentFormat, postData.data(), postData.size());
     } else {
         request = nabto_client_coap_new(connection, "GET", path.c_str());
     }
@@ -121,7 +122,7 @@ void print_connect_error(NabtoClientError ec, NabtoClientConnection* connection)
     exit(1);
 }
 
-void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel, std::string* postData)
+void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* request, std::string* logLevel, std::string* postData, uint16_t* contentFormat)
 {
     try
     {
@@ -134,6 +135,7 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
             ("t,sct", "Optional. Server connect token from device used for remote connect", cxxopts::value<std::string>()->default_value("demosct"))
             ("r,request", "Optional. The coap request path to use. Ie. /hello-world", cxxopts::value<std::string>()->default_value("/hello-world"))
             ("P,post", "optional. String data to post to the device", cxxopts::value<std::string>()->default_value(""))
+            ("c,content-format", "optional. Content format (IANA constants, e.g. 0 => UTF, 50 => JSON); 0 is default", cxxopts::value<uint16_t>()->default_value("0"))
             ("log-level", "Optional. The log level (error|info|trace)", cxxopts::value<std::string>()->default_value("error"))
             ("force-remote", "Optional. Force the client to connect remote, not using local discovery")
             ("h,help", "Shows this help text");
@@ -172,6 +174,7 @@ void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* req
         *request = result["request"].as<std::string>();
         *logLevel = result["log-level"].as<std::string>();
         *postData = result["post"].as<std::string>();
+        *contentFormat = result["content-format"].as<uint16_t>();
     }
     catch (const cxxopts::OptionException& e)
     {
