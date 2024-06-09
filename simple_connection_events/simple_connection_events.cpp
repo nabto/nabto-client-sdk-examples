@@ -23,7 +23,7 @@ static NabtoClientFuture* eventFuture_;
 static NabtoClientListener* listener_;
 static NabtoClientConnectionEvent connectionEvent_;
 
-void arm_connection_event_listener();
+void arm_connection_event_listener(NabtoClientConnection* connection);
 
 const char* connection_event_to_string(NabtoClientConnectionEvent event) {
     if (event == NABTO_CLIENT_CONNECTION_EVENT_CLOSED) {
@@ -37,13 +37,26 @@ const char* connection_event_to_string(NabtoClientConnectionEvent event) {
     }
 }
 
+const char* connection_type_to_string(NabtoClientConnection* connection) {
+    NabtoClientConnectionType type;
+    nabto_client_connection_get_type(connection, &type);
+    return type == NABTO_CLIENT_CONNECTION_TYPE_RELAY ? "Relay" : "Direct";
+}
+
+void print_connection_type(NabtoClientConnection* connection) {
+    std::cout << "Connection type is now: " << connection_type_to_string(connection) << std::endl;
+}
+
 void connection_event_cb(NabtoClientFuture* future, NabtoClientError ec, void* data) {
     if (ec != NABTO_CLIENT_EC_OK) {
         std::cerr << "Connection event callback error: " << nabto_client_error_get_message(ec) << std::endl;
     } else {
         std::cout << "Connection event: " << connection_event_to_string(connectionEvent_) << std::endl;
+        if (connectionEvent_ == NABTO_CLIENT_CONNECTION_EVENT_CHANNEL_CHANGED) {
+            print_connection_type((NabtoClientConnection*)data);
+        }
     }
-    arm_connection_event_listener();
+    arm_connection_event_listener((NabtoClientConnection*)data);
 }
 
 void init_connection_event_listener(NabtoClient* context, NabtoClientConnection* connection) {
@@ -53,14 +66,28 @@ void init_connection_event_listener(NabtoClient* context, NabtoClientConnection*
     nabto_client_connection_events_init_listener(connection, listener_);
 }
 
-void arm_connection_event_listener() {
+void arm_connection_event_listener(NabtoClientConnection* connection) {
     nabto_client_listener_connection_event(listener_, eventFuture_, &connectionEvent_);
-    nabto_client_future_set_callback(eventFuture_, connection_event_cb, NULL);
+    nabto_client_future_set_callback(eventFuture_, connection_event_cb, connection);
 }
 
 // connection event specifics
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+void connected_cb(NabtoClientFuture* future, NabtoClientError ec, void* data) {
+    NabtoClientConnection* connection = (NabtoClientConnection*)data;
+    char* f;
+    if (ec != NABTO_CLIENT_EC_OK) {
+        print_connect_error(ec, connection);
+    } else if (nabto_client_connection_get_device_fingerprint_hex(connection, &f) != NABTO_CLIENT_EC_OK) {
+        std::cerr << "Could not get remote peer fingerprint" << std::endl;
+    } else {
+        std::cout << "Connected to device with fingerprint: " << std::string(f) << std::endl;
+        nabto_client_string_free(f);
+    }
+    print_connection_type(connection);
+}
 
 void die(std::string msg, cxxopts::Options options) {
     std::cout << msg << std::endl;
@@ -105,24 +132,11 @@ int main(int argc, char** argv) {
     nabto_client_connection_set_options(connection, opts.dump().c_str());
 
     init_connection_event_listener(context, connection);
-    arm_connection_event_listener();
-
-    eventFuture_ = nabto_client_future_new(context);
+    arm_connection_event_listener(connection);
 
     NabtoClientFuture* connectFuture = nabto_client_future_new(context);
     nabto_client_connection_connect(connection, connectFuture);
-
-    NabtoClientError ec = nabto_client_future_wait(connectFuture);
-
-    char* f;
-    if (ec != NABTO_CLIENT_EC_OK) {
-        print_connect_error(ec, connection);
-    } else if (nabto_client_connection_get_device_fingerprint_hex(connection, &f) != NABTO_CLIENT_EC_OK) {
-        std::cerr << "could not get remote peer fingerprint" << std::endl;
-    } else {
-        std::cout << "Connected to device with fingerprint: " << std::string(f) << std::endl;
-        nabto_client_string_free(f);
-    }
+    nabto_client_future_set_callback(connectFuture, connected_cb, connection);
 
     // read a character from stdin
     std::cout << "Press enter to disconnect..." << std::endl;
