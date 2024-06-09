@@ -67,6 +67,8 @@ void init_connection_event_listener(NabtoClient* context, NabtoClientConnection*
 }
 
 void arm_connection_event_listener(NabtoClientConnection* connection) {
+    // initialize future for the event listener, the future is resolved when a new connection event is
+    // ready or the listener has been stopped
     nabto_client_listener_connection_event(listener_, eventFuture_, &connectionEvent_);
     nabto_client_future_set_callback(eventFuture_, connection_event_cb, connection);
 }
