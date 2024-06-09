@@ -10,7 +10,6 @@
 #include <chrono>
 #include <iomanip>
 #include <fstream>
-#include <__thread/this_thread.h>
 
 void print_connect_error(NabtoClientError ec, NabtoClientConnection* connection);
 void parse_options(int argc, char** argv, nlohmann::json* opts, std::string* logLevel);
