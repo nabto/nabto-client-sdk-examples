@@ -143,11 +143,13 @@ int main(int argc, char** argv) {
     std::cout << "Press enter to disconnect..." << std::endl;
     getchar();
 
-    nabto_client_connection_close(connection, connectFuture);
-    nabto_client_future_wait(connectFuture);
+    NabtoClientFuture* closeFuture = nabto_client_future_new(context);
+    nabto_client_connection_close(connection, closeFuture);
+    nabto_client_future_wait(closeFuture);
     nabto_client_stop(context);
 
     nabto_client_future_free(connectFuture);
+    nabto_client_future_free(closeFuture);
     nabto_client_connection_free(connection);
     nabto_client_free(context);
 }
