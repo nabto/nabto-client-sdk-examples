@@ -46,17 +46,36 @@ void print_connection_type(NabtoClientConnection* connection) {
     std::cout << "Connection type is now: " << connection_type_to_string(connection) << std::endl;
 }
 
+void print_all_connection_info(NabtoClientConnection *connection)
+{
+    print_connection_type(connection);
+    char *f;
+    if (nabto_client_connection_get_device_fingerprint_hex(connection, &f) == NABTO_CLIENT_EC_OK)
+    {
+        std::cout << "Connected to device with fingerprint: " << std::string(f) << std::endl;
+        nabto_client_string_free(f);
+    }
+    else
+    {
+        std::cerr << "Could not get remote peer fingerprint" << std::endl;
+    }
+}
+
 void connection_event_cb(NabtoClientFuture* future, NabtoClientError ec, void* data) {
+    NabtoClientConnection* connection = (NabtoClientConnection*)data;
     if (ec != NABTO_CLIENT_EC_OK) {
         std::cerr << "Connection event callback error: " << nabto_client_error_get_message(ec) << std::endl;
     } else {
         std::cout << "Connection event: " << connection_event_to_string(connectionEvent_) << std::endl;
-        if (connectionEvent_ == NABTO_CLIENT_CONNECTION_EVENT_CHANNEL_CHANGED) {
-            print_connection_type((NabtoClientConnection*)data);
+        if (connectionEvent_ == NABTO_CLIENT_CONNECTION_EVENT_CONNECTED) {
+            print_all_connection_info(connection);
+        } else if (connectionEvent_ == NABTO_CLIENT_CONNECTION_EVENT_CHANNEL_CHANGED) {
+            print_connection_type(connection);
         }
     }
-    arm_connection_event_listener((NabtoClientConnection*)data);
+    arm_connection_event_listener(connection);
 }
+
 
 void init_connection_event_listener(NabtoClient* context, NabtoClientConnection* connection) {
     listener_ = nabto_client_listener_new(context);
@@ -78,16 +97,9 @@ void arm_connection_event_listener(NabtoClientConnection* connection) {
 
 void connected_cb(NabtoClientFuture* future, NabtoClientError ec, void* data) {
     NabtoClientConnection* connection = (NabtoClientConnection*)data;
-    char* f;
     if (ec != NABTO_CLIENT_EC_OK) {
         print_connect_error(ec, connection);
-    } else if (nabto_client_connection_get_device_fingerprint_hex(connection, &f) != NABTO_CLIENT_EC_OK) {
-        std::cerr << "Could not get remote peer fingerprint" << std::endl;
-    } else {
-        std::cout << "Connected to device with fingerprint: " << std::string(f) << std::endl;
-        nabto_client_string_free(f);
     }
-    print_connection_type(connection);
 }
 
 void die(std::string msg, cxxopts::Options options) {
