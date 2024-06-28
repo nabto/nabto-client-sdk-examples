@@ -6,6 +6,7 @@
 #include <set>
 
 #include <memory>
+#include <vector>
 
 namespace nabto {
 namespace examples {
@@ -39,6 +40,12 @@ class PairingResponse {
     std::string deviceId_;
 };
 
+class Fingerprint {
+public:
+    std::string fingerprint_;
+    std::string name_;
+};
+
 class User {
  public:
 
@@ -48,7 +55,7 @@ class User {
 
     std::string username_;
     std::string displayName_;
-    std::string fingerprint_;
+    std::vector<Fingerprint> fingerprints_;
     std::string sct_;
 };
 

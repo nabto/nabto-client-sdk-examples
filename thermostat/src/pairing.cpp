@@ -148,10 +148,34 @@ std::unique_ptr<User> get_me(NabtoClient* client, NabtoClientConnection* connect
             tmp.get_to(user->displayName_);
         }
     }
-    if (p.contains("Fingerprint")) {
-        auto tmp = p["Fingerprint"];
-        if (tmp.is_string()) {
-            tmp.get_to(user->fingerprint_);
+    if (p.contains("Fingerprints")) {
+        for (auto f : p["Fingerprints"]) {
+            Fingerprint fp;
+            if (f.contains("Fingerprint")) {
+                auto tmp = f["Fingerprint"];
+                if (tmp.is_string()) {
+                    tmp.get_to(fp.fingerprint_);
+                }
+            } else {
+                continue;
+            }
+
+            if (f.contains("Name")) {
+                auto tmp = f["Name"];
+                if (tmp.is_string()) {
+                    tmp.get_to(fp.name_);
+                }
+            }
+            user->fingerprints_.push_back(fp);
+        }
+    } else {
+        if (p.contains("Fingerprint")) {
+            auto tmp = p["Fingerprint"];
+            if (tmp.is_string()) {
+                Fingerprint fp;
+                tmp.get_to(fp.fingerprint_);
+                user->fingerprints_.push_back(fp);
+            }
         }
     }
     if (p.contains("Sct")) {
