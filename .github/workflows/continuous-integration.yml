@@ -13,20 +13,20 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [windows-2022, macos-12]
+        os: [windows-2022, macos-14]
         include:
           - os: windows-2022
             installFolder: "nabto-client-sdk-examples-windows_x86-64"
             compression: "zip"
             compressionCommand: "7z a"
-          - os: macos-12
+          - os: macos-14
             installFolder: "nabto-client-sdk-examples-macos-universal"
             compression: "tar.gz"
             compressionCommand: "tar -czf"
 
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Configure cmake
         run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/${{ matrix.installFolder }} ..
@@ -46,8 +46,9 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ success() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: ${{ matrix.installFolder }}
           path: ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }}
           if-no-files-found: warn
 
@@ -56,7 +57,7 @@ jobs:
     name: Build
     runs-on: ${{matrix.os}}
     container:
-      image: ubuntu:18.04
+      image: ubuntu:22.04
     strategy:
       matrix:
         os: [ubuntu-22.04]
@@ -72,7 +73,7 @@ jobs:
     steps:
       - name: Install sw
         run: apt-get update -y && apt-get install -y cmake build-essential git
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Configure cmake
         run: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=`pwd`/../${{ matrix.installFolder }} ..
@@ -95,14 +96,15 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ success() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: ${{ matrix.installFolder }}
           path: ${{ github.workspace }}/${{ matrix.installFolder }}.${{ matrix.compression }}
           if-no-files-found: warn
 
   release-assets:
     name: Release Assets
-    needs: build
+    needs: [build, build-linux]
     runs-on: ubuntu-22.04
     permissions:
       # allow the job to upload assets to the release
@@ -112,18 +114,14 @@ jobs:
         binary: [nabto-client-sdk-examples-windows_x86-64.zip, nabto-client-sdk-examples-linux_x86-64.tar.gz, nabto-client-sdk-examples-macos-universal.tar.gz]
     if: github.event_name == 'release' && success()
     steps:
-      - name:  download artifacts
-        uses: actions/download-artifact@v3
+      - name: download artifacts
+        uses: actions/download-artifact@v4
         with:
-          path: ./
+          path: ./artifact
+          merge-multiple: true
       - name: list files
         run: ls -R
       - name: Upload Source Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./artifact/${{matrix.binary}}
-          asset_name: ${{matrix.binary}}
-          asset_content_type: application/octet-stream
+          files: ./artifact/${{matrix.binary}}
