@@ -125,8 +125,8 @@ https://github.com/nabto/nabto-client-sdk-releases
 The library can easily be updated to a new version by running the below command
 or manually copying the desired version of the artifacts to this repository.
 
-E.g. to update client libraries to v5.12.0 one can use the following command.
+E.g. to update client libraries to v5.15.5 one can use the following command.
 ```
 cd nabto_client_sdk_library
-curl -sSL https://github.com/nabto/nabto-client-sdk-releases/archive/refs/tags/v5.12.0.tar.gz | tar -xzf - --strip-components=1
+curl -sSL https://github.com/nabto/nabto-client-sdk-releases/archive/refs/tags/v5.15.5.tar.gz | tar -xzf - --strip-components=1
 ```
