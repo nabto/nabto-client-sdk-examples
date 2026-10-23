@@ -1,5 +1,27 @@
 # Changelog
 
+## [5.15.5] - 2026-10-21
+
+### Security
+ * HTTPS server certificates are now verified on Linux. Requests fail if the certificate does not chain to a trusted Mozilla root or does not match the hostname.
+
+### Added
+ * `nabto_client.dll` now has a Windows version resource.
+
+### Changed
+ * Upgraded dependencies.
+
+## [5.15.4] - 2026-06-26
+
+### Fixed
+ * Fixed an HTTP issue on Apple platforms.
+
+## [5.15.3] - 2026-06-22
+
+### Changed
+ * The iOS xcframework has been rebuilt and renamed from `NabtoEdgeClientApiFW.xcframework` to `NabtoEdgeClientApi.xcframework`.
+ * Bumped the minimum supported Apple platform versions.
+
 ## [5.15.1] - 2026-05-07
 
 ### Fixed
